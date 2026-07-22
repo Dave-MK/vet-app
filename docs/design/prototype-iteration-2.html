@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Andale Care Hub — UI Concept, Iteration 2</title>
+<style>
+  /* ============================================================
+     Andale Care Hub — design tokens
+     Semantic colour only (see ui-review-iteration-1.md §11).
+     Warm neutrals + teal brand; red is reserved for clinical.
+     ============================================================ */
+  :root{
+    /* brand */
+    --navy:#12263f; --navy-2:#1b3a5c; --navy-deep:#0a1729;
+    --teal:#1c8880; --teal-600:#16706a; --teal-300:#63c6bc; --teal-soft:#e7f5f3; --teal-line:#bfe2dd;
+    --sand:#e9a94d;                                   /* decorative warmth ONLY — never a status */
+
+    /* neutrals (very slightly warm so the UI reads friendly, not clinical-cold) */
+    --ink:#15202e; --ink-2:#2b3949; --muted:#5e6b7d; --muted-2:#8794a5;
+    --line:#e3e8ef; --line-soft:#eef2f6;
+    --bg:#f4f7fa; --bg-2:#eef3f8; --card:#ffffff; --card-2:#fafcfd;
+
+    /* status vocabulary — controlled */
+    --ok:#28714f;      --ok-soft:#e8f5ee;   --ok-line:#c2e3d1;    /* complete / stable */
+    --warn:#8d5d12;    --warn-soft:#fdf2dd; --warn-line:#f0dcb2;  /* operational: due-soon / attention */
+    --alert:#b32f2c;   --alert-soft:#fceae9; --alert-line:#efc3c1; /* CLINICAL urgency only */
+    --alert-solid:#c0403d;
+    --info:#3a5fb4;    --info-soft:#ebf1fd; --info-line:#d3e0f7;   /* informational */
+
+    /* elevation ramp */
+    --sh-1:0 1px 2px rgba(16,35,63,.05), 0 1px 3px rgba(16,35,63,.04);
+    --sh-2:0 1px 2px rgba(16,35,63,.04), 0 6px 18px rgba(16,35,63,.06);
+    --sh-3:0 2px 6px rgba(16,35,63,.05), 0 18px 42px rgba(16,35,63,.10);
+    --sh-modal:0 32px 80px rgba(8,18,36,.34);
+    --shadow:var(--sh-2);
+
+    /* geometry & rhythm */
+    --r-xs:8px; --r-sm:10px; --r:14px; --r-lg:18px; --r-xl:22px; --radius:var(--r);
+    --pad-x:26px;                                     /* page gutter — shrinks on small screens */
+    --gap:15px;
+    --nav-w:256px;
+    --top-h:70px;
+    --tap:38px;                                       /* min interactive size — grows on touch */
+
+    --ease:cubic-bezier(.32,.72,.35,1);
+  }
+
+  /* ============ base ============ */
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;color:var(--ink);
+    background:var(--bg);
+    background-image:
+      radial-gradient(1100px 620px at 88% -8%, rgba(28,136,128,.07), transparent 60%),
+      radial-gradient(900px 520px at -6% 4%, rgba(233,169,77,.06), transparent 62%);
+    background-attachment:fixed;
+    font-family:Inter,"Segoe UI Variable Text",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:15px;line-height:1.45;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  button,input,textarea,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  h1,h2,h3,h4{line-height:1.22;letter-spacing:-.015em}
+  a{color:var(--teal-600)}
+  :focus-visible{outline:3px solid var(--teal-300);outline-offset:2px;border-radius:6px}
+  .num{font-variant-numeric:tabular-nums}
+  ::selection{background:var(--teal-soft);color:var(--navy)}
+  /* tidy scrollbars on the scrolling regions */
+  .sidebar,.board,.due-rail,.transcript,.modal{scrollbar-width:thin;scrollbar-color:#c3cedb transparent}
+  .sidebar{scrollbar-color:rgba(255,255,255,.22) transparent}
+  .board::-webkit-scrollbar,.due-rail::-webkit-scrollbar{height:8px}
+  .board::-webkit-scrollbar-thumb,.due-rail::-webkit-scrollbar-thumb{background:#cdd7e2;border-radius:99px}
+
+  /* ============ shell ============ */
+  .app{display:grid;grid-template-columns:var(--nav-w) minmax(0,1fr);min-height:100vh;min-height:100dvh}
+
+  .sidebar{
+    background:linear-gradient(168deg,var(--navy-2) 0%,var(--navy) 38%,var(--navy-deep) 100%);
+    color:#fff;padding:18px 12px;display:flex;flex-direction:column;
+    position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior:contain;
+    z-index:40;
+  }
+  /* soft paw watermark — the "it's animals" cue, kept nearly invisible */
+  .sidebar:before{
+    content:"";position:absolute;inset:auto 0 0 0;height:340px;pointer-events:none;opacity:.9;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg fill='%23ffffff' fill-opacity='0.035'%3E%3Cellipse cx='75' cy='92' rx='23' ry='18'/%3E%3Cellipse cx='48' cy='62' rx='9' ry='12'/%3E%3Cellipse cx='68' cy='51' rx='9' ry='13'/%3E%3Cellipse cx='89' cy='53' rx='9' ry='13'/%3E%3Cellipse cx='106' cy='70' rx='9' ry='12'/%3E%3C/g%3E%3C/svg%3E") no-repeat center bottom/190px;
+  }
+  .sidebar>*{position:relative}
+
+  .brand{display:flex;align-items:center;gap:12px;padding:4px 8px 16px}
+  .brandmark{
+    width:42px;height:42px;border-radius:14px;flex:0 0 auto;
+    background:linear-gradient(140deg,var(--teal-300),var(--teal) 62%,#1a6f8a);
+    display:grid;place-items:center;font-size:22px;line-height:1;
+    box-shadow:0 8px 20px rgba(28,136,128,.42), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .brand strong{display:block;font-size:15.5px;letter-spacing:-.01em}
+  .brand span{display:block;font-size:10.5px;color:#9db0c5;margin-top:3px;letter-spacing:.02em}
+
+  .role-switch{margin:0 4px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:var(--r);padding:10px}
+  .role-switch label{display:block;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;color:#9db0c5;margin-bottom:6px;font-weight:800}
+  .role-switch select{
+    width:100%;background:rgba(6,17,32,.7);color:#fff;border:1px solid rgba(255,255,255,.18);
+    border-radius:var(--r-sm);padding:8px 9px;font-size:13px;
+  }
+  .role-switch select option{color:#fff;background:#0e2038}
+
+  nav{display:flex;flex-direction:column;gap:3px}
+  .navitem{
+    border:0;background:transparent;color:#c2cfdd;padding:10px 12px;border-radius:12px;text-align:left;
+    display:flex;gap:11px;align-items:center;font-size:14px;font-weight:600;width:100%;
+    transition:background .16s var(--ease),color .16s var(--ease),transform .16s var(--ease);
+  }
+  .navitem:hover{background:rgba(255,255,255,.09);color:#fff}
+  .navitem:active{transform:scale(.985)}
+  .navitem.active{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 3px 0 0 var(--teal-300)}
+  .navitem .ico{width:20px;text-align:center;flex:0 0 auto;font-size:15px;opacity:.95}
+  .navitem .flag{margin-left:auto;font-size:9px;background:rgba(255,255,255,.15);border-radius:6px;padding:2px 6px;color:#c3d1e0;font-weight:800;letter-spacing:.4px}
+  .navitem .cnt{margin-left:auto;font-size:11px;background:var(--alert-solid);border-radius:999px;padding:1px 7px;font-weight:800;color:#fff;box-shadow:0 2px 6px rgba(192,64,61,.45)}
+
+  .sidebar-bottom{margin-top:auto;padding-top:14px}
+  .clinic-status{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);padding:11px 12px;border-radius:var(--r);margin:0 4px 10px;font-size:12.5px}
+  .clinic-status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#63d3a0;margin-right:7px;box-shadow:0 0 0 3px rgba(99,211,160,.18)}
+  .clinic-status small{color:#a9b8c8;display:block;margin-top:3px}
+  .user-mini{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;background:linear-gradient(140deg,#dff0ed,#c2e2dc);
+    display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:12.5px;flex:0 0 auto;letter-spacing:.02em;
+  }
+  .user-mini b{font-size:13.5px}
+  .user-mini small{display:block;color:#a9b8c8;font-size:11.5px;margin-top:1px}
+
+  /* ============ topbar ============ */
+  .main{min-width:0;display:flex;flex-direction:column}
+  .topbar{
+    min-height:var(--top-h);background:rgba(255,255,255,.86);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px var(--pad-x);
+    position:sticky;top:0;z-index:20;backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);
+  }
+  .menu-btn,.search-btn{display:none}
+  .search{
+    display:flex;align-items:center;gap:8px;background:var(--bg-2);border:1px solid var(--line);
+    padding:9px 13px;border-radius:12px;flex:0 1 400px;min-width:0;color:var(--muted);
+    transition:border-color .16s var(--ease),background .16s var(--ease),box-shadow .16s var(--ease);
+  }
+  .search:focus-within{background:#fff;border-color:var(--teal-line);box-shadow:0 0 0 3px rgba(28,136,128,.10)}
+  .search input{border:0;outline:0;background:transparent;width:100%;min-width:0;font-size:14px}
+  .top-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .icon-btn{
+    width:var(--tap);height:var(--tap);min-width:var(--tap);border-radius:11px;border:1px solid var(--line);background:#fff;
+    display:inline-grid;place-items:center;box-shadow:var(--sh-1);
+    transition:border-color .16s var(--ease),transform .16s var(--ease),box-shadow .16s var(--ease);
+  }
+  .icon-btn:hover{border-color:#cdd8e4;box-shadow:var(--sh-2)}
+  .icon-btn:active{transform:translateY(1px)}
+
+  /* ============ buttons ============ */
+  .primary{
+    border:0;background:linear-gradient(180deg,var(--teal),var(--teal-600));color:#fff;
+    padding:10px 15px;border-radius:11px;font-weight:700;white-space:nowrap;min-height:var(--tap);
+    box-shadow:0 1px 2px rgba(16,35,63,.10),0 6px 16px rgba(28,136,128,.24);
+    transition:filter .16s var(--ease),transform .16s var(--ease),box-shadow .16s var(--ease);
+  }
+  .primary:hover{filter:brightness(1.06)}
+  .primary:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(16,35,63,.12)}
+  .danger-btn{
+    border:1px solid var(--alert-line);background:var(--alert-soft);color:var(--alert);
+    padding:10px 14px;border-radius:11px;font-weight:800;white-space:nowrap;min-height:var(--tap);
+    transition:background .16s var(--ease),transform .16s var(--ease);
+  }
+  .danger-btn:hover{background:#fadedc}
+  .danger-btn:active{transform:translateY(1px)}
+  .soft-btn{
+    border:1px solid var(--line);background:#fff;border-radius:var(--r-sm);padding:8px 12px;
+    font-weight:700;color:var(--navy);white-space:nowrap;font-size:13.5px;min-height:34px;box-shadow:var(--sh-1);
+    transition:border-color .16s var(--ease),background .16s var(--ease),transform .16s var(--ease);
+  }
+  .soft-btn:hover{border-color:#cdd8e4;background:var(--card-2)}
+  .soft-btn:active{transform:translateY(1px)}
+
+  /* ============ page frame ============ */
+  .content{padding:22px var(--pad-x) 48px;flex:1}
+  .page{display:none;animation:fade .22s var(--ease)}
+  .page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px;flex-wrap:wrap}
+  .page-head h1{margin:0;font-size:clamp(21px,1.05rem + 1vw,29px);letter-spacing:-.025em;color:var(--navy)}
+  .page-head p{margin:7px 0 0;color:var(--muted);max-width:64ch;font-size:14px;line-height:1.55}
+  .head-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .date-chip{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 13px;color:var(--muted);white-space:nowrap;font-size:13px;box-shadow:var(--sh-1)}
+
+  /* ============ layout primitives ============ */
+  .grid{display:grid;gap:var(--gap)}
+  .stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+  .layout-2{grid-template-columns:minmax(0,1.6fr) minmax(320px,.9fr)}
+  .split{grid-template-columns:minmax(0,1.05fr) minmax(0,1.95fr);display:grid;gap:var(--gap)}
+  .intake-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.9fr);gap:var(--gap)}
+  .rx-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);gap:var(--gap)}
+  .consult-grid{display:grid;grid-template-columns:250px minmax(0,1fr) 370px;gap:var(--gap)}
+
+  /* ============ cards ============ */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+    box-shadow:var(--sh-2);overflow:hidden;
+  }
+  .card-head{
+    padding:14px 17px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;
+    justify-content:space-between;gap:10px;flex-wrap:wrap;
+    background:linear-gradient(180deg,#fff,var(--card-2));
+  }
+  .card-head h2,.card-head h3{margin:0;font-size:15.5px;color:var(--navy)}
+  .card-body{padding:16px 17px}
+  .subtle{color:var(--muted);font-size:13px}
+
+  .stat{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:15px 16px;
+    box-shadow:var(--sh-1);text-align:left;display:block;width:100%;
+    transition:border-color .16s var(--ease),box-shadow .16s var(--ease),transform .16s var(--ease);
+  }
+  button.stat:hover{border-color:var(--teal-line);box-shadow:var(--sh-2);transform:translateY(-1px)}
+  button.stat:active{transform:none}
+  .stat .label{color:var(--muted);font-size:12.5px;font-weight:600}
+  .stat .value{font-size:clamp(23px,1rem + .7vw,28px);font-weight:800;margin:5px 0 3px;letter-spacing:-.03em;color:var(--navy)}
+  .stat .sub{font-size:12px;color:var(--muted);line-height:1.45}
+  .stat .sub.ok{color:var(--ok)} .stat .sub.warn{color:var(--warn)} .stat .sub.alert{color:var(--alert);font-weight:700}
+
+  /* ============ pills: controlled vocabulary ============ */
+  .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:700;white-space:nowrap;line-height:1.5}
+  .pill.ok{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok-line)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-line)}
+  .pill.alert{background:var(--alert-soft);color:var(--alert);border:1px solid var(--alert-line)}
+  .pill.info{background:var(--info-soft);color:var(--info);border:1px solid var(--info-line)}
+  .pill.brand{background:var(--teal-soft);color:var(--teal-600);border:1px solid var(--teal-line)}
+  .pill.plain{background:var(--bg-2);color:var(--muted);border:1px solid var(--line)}
+  /* time chips: due → outline · due-soon → amber fill · overdue → red fill + count-up */
+  .due{border:1px solid var(--line);background:#fff;color:var(--ink)}
+  .due-soon{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-line)}
+  .overdue{background:var(--alert-solid);color:#fff;border:1px solid transparent;box-shadow:0 2px 8px rgba(192,64,61,.22)}
+  .acked{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok-line)}
+  .prov{
+    display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:2px 6px;font-size:10px;font-weight:700;
+    letter-spacing:.2px;background:var(--bg-2);color:var(--muted);border:1px solid var(--line);vertical-align:middle;white-space:nowrap;
+  }
+  .prov.ai{background:#f1ecfd;color:#6641c0;border-color:#e0d5f7}
+  .prov.pms{background:var(--info-soft);color:var(--info);border-color:var(--info-line)}
+
+  /* ============ rows & lists ============ */
+  .rowline{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line-soft);align-items:flex-start}
+  .rowline:last-child{border-bottom:0}
+  .mini-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--teal-soft);flex:0 0 auto;font-size:16px;box-shadow:inset 0 0 0 1px rgba(28,136,128,.10)}
+  .item-title{font-size:13.5px;font-weight:800;line-height:1.4}
+  .item-meta{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.55}
+  .row-right{margin-left:auto;display:flex;gap:6px;align-items:center;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}
+  .owner{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);white-space:nowrap}
+  .owner .avatar{width:22px;height:22px;font-size:9px}
+  .ack-btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;color:var(--navy);box-shadow:var(--sh-1)}
+  .ack-btn:hover{border-color:#cdd8e4;background:var(--card-2)}
+  .esc-btn{border:1px solid var(--alert-line);background:#fff;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800;color:var(--alert)}
+  .esc-btn:hover{background:var(--alert-soft)}
+
+  .schedule-row{display:grid;grid-template-columns:56px 44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line-soft)}
+  .schedule-row:last-child{border-bottom:0}
+  .schedule-row.now{background:linear-gradient(90deg,var(--teal-soft),transparent 70%);border-left:3px solid var(--teal);padding-left:9px;margin-left:-12px;border-radius:8px}
+  .time{font-weight:800;color:var(--navy);font-size:13.5px}
+  .pet-avatar{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:20px;background:linear-gradient(140deg,var(--teal-soft),#dcefec);box-shadow:inset 0 0 0 1px rgba(28,136,128,.10)}
+  .patient-name{font-weight:800;font-size:13.5px}
+  .client-name{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .empty{padding:22px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:12px;background:var(--card-2)}
+
+  /* ============ tasks & handover ============ */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{border:0;background:transparent;padding:12px 13px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;font-size:13.5px}
+  .tab:hover{color:var(--ink-2)}
+  .tab.active{color:var(--navy);border-bottom-color:var(--teal)}
+  .task-group{padding:12px 17px 5px;font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)}
+  .task-group.alert{color:var(--alert)}
+  .task-row{display:flex;gap:11px;align-items:flex-start;padding:11px 17px;border-bottom:1px solid var(--line-soft);transition:background .16s var(--ease)}
+  .task-row:hover{background:var(--card-2)}
+  .task-row:last-child{border-bottom:0}
+  .task-row input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--teal);flex:0 0 auto}
+  .handover-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px;font-size:13px;background:var(--card-2);line-height:1.55}
+  .handover-item .who{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+
+  /* ============ forms & intake ============ */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-weight:800;font-size:12.5px;margin-bottom:6px;color:var(--ink-2)}
+  .field input[type=text],.field select,textarea,.input-box{
+    width:100%;max-width:100%;border:1px solid var(--line);border-radius:11px;padding:10px 12px;
+    background:var(--card-2);color:var(--ink);font-size:14px;
+    transition:border-color .16s var(--ease),background .16s var(--ease),box-shadow .16s var(--ease);
+  }
+  .field input[type=text]:focus,.field select:focus,textarea:focus,.input-box:focus{
+    outline:0;background:#fff;border-color:var(--teal-line);box-shadow:0 0 0 3px rgba(28,136,128,.10)
+  }
+  textarea{min-height:78px;resize:vertical}
+  .redflags{display:grid;gap:7px}
+  .rf{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:13px;background:#fff;cursor:pointer;transition:border-color .16s var(--ease),background .16s var(--ease)}
+  .rf:hover{border-color:#cdd8e4}
+  .rf input{width:17px;height:17px;accent-color:var(--alert-solid);flex:0 0 auto}
+  .rf.checked{border-color:var(--alert-line);background:var(--alert-soft);font-weight:700}
+  .outcome-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+  /* ============ Rx queue ============ */
+  .pipeline{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .stage-chip{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 13px;font-size:11.5px;font-weight:700;color:var(--muted);box-shadow:var(--sh-1);flex:1 1 auto;min-width:96px}
+  .stage-chip b{display:block;font-size:18px;color:var(--ink);margin-top:2px;letter-spacing:-.02em}
+  .stage-chip.hot{border-color:var(--alert-line);background:linear-gradient(180deg,#fff,var(--alert-soft))}
+  .stage-chip.hot b{color:var(--alert)}
+  .flagline{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+
+  /* ============ patient record ============ */
+  .patient-header{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .pet-photo{
+    width:78px;height:78px;border-radius:22px;flex:0 0 auto;
+    background:linear-gradient(140deg,#e4f4f0,#bfe3dc);display:grid;place-items:center;font-size:42px;position:relative;
+    box-shadow:inset 0 0 0 1px rgba(28,136,128,.14), 0 8px 20px rgba(28,136,128,.14);
+  }
+  .pet-photo small{position:absolute;bottom:-6px;right:-6px;background:var(--navy);color:#fff;font-size:9px;border-radius:7px;padding:2px 6px;font-weight:700}
+  .patient-header h2{margin:0;font-size:clamp(19px,1rem + .5vw,24px);color:var(--navy)}
+  .patient-header p{margin:4px 0;color:var(--muted);font-size:13.5px}
+  .header-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .quick-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .info-list{display:grid;gap:12px}
+  .info-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px;font-size:13px;align-items:baseline;line-height:1.6}
+  .info-row span:first-child{color:var(--muted);font-weight:600}
+  .info-row b{min-width:0;overflow-wrap:anywhere}
+  .comfort{border-radius:12px;padding:11px 12px;background:var(--card-2);border:1px solid var(--line);font-size:13px;margin-bottom:8px}
+  .comfort .meta{font-size:11px;color:var(--muted);margin-top:4px}
+  .timeline{position:relative;padding-left:20px}
+  .timeline:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--teal-line),var(--line))}
+  .timeline-item{position:relative;padding:0 0 16px 15px}
+  .timeline-item:before{content:"";position:absolute;left:-18px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
+  .timeline-item h4{margin:0 0 4px;font-size:13.5px}
+  .timeline-item p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+  .concern{background:var(--alert-soft);border:1px solid var(--alert-line);padding:11px 13px;border-radius:12px;font-size:13px;margin-bottom:13px;line-height:1.55}
+  .concern b{color:var(--alert)}
+  .concern .meta{font-size:11px;color:#8a5a58;margin-top:5px}
+  .filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+  .fchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--muted)}
+  .fchip:hover{border-color:#cdd8e4}
+  .fchip.active{background:var(--teal-soft);color:var(--teal-600);border-color:var(--teal-line)}
+
+  /* ============ consultation ============ */
+  .phase-banner{background:var(--info-soft);border:1px solid var(--info-line);color:#33518f;border-radius:12px;padding:11px 14px;font-size:12px;font-weight:700;margin-bottom:16px;line-height:1.55}
+  .consult-item{padding:11px 12px;border-radius:12px;margin-bottom:7px;border:1px solid transparent;cursor:pointer;transition:background .16s var(--ease)}
+  .consult-item:hover{background:var(--card-2)}
+  .consult-item.active{background:var(--teal-soft);border-color:var(--teal-line)}
+  .consult-item strong{display:block;font-size:13.5px}
+  .consult-item span{font-size:12px;color:var(--muted)}
+  .context-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+  .form-section{margin-bottom:16px}
+  .form-section label{display:block;font-weight:800;font-size:12.5px;margin-bottom:7px;color:var(--ink-2)}
+  .exam-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  .exam-tile{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--card-2);font-size:12px;line-height:1.5}
+  .exam-tile strong{display:block;margin-bottom:4px}
+  .exam-tile.emptyt{border-style:dashed;color:var(--muted);background:#fff}
+
+  .scribe{background:linear-gradient(170deg,var(--navy-2),var(--navy) 55%,var(--navy-deep));color:#fff;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-3);align-self:start;min-width:0}
+  .scribe-ctrl{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.14);display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;background:var(--navy-2);z-index:2}
+  .rec-dot{width:9px;height:9px;border-radius:50%;background:#f0716e;box-shadow:0 0 0 5px rgba(240,113,110,.15);animation:pulse 1.6s infinite;flex:0 0 auto}
+  @keyframes pulse{50%{box-shadow:0 0 0 9px rgba(240,113,110,.04)}}
+  .ctrl-btn{border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:800}
+  .ctrl-btn:hover{background:rgba(255,255,255,.14)}
+  .consent-chip{margin-left:auto;background:rgba(105,210,155,.14);border:1px solid rgba(105,210,155,.4);color:#8fe2b6;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700}
+  .scribe-body{padding:14px 15px}
+  .zone-label{font-size:9.5px;letter-spacing:.9px;text-transform:uppercase;color:#8fa3b8;margin:16px 0 8px;font-weight:800}
+  .zone-label:first-child{margin-top:0}
+  .transcript{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;font-size:12px;line-height:1.7;color:#e6edf5;max-height:min(40vh,180px);overflow:auto}
+  .transcript b{color:#83ddd0}
+  .lowconf{border-bottom:2px dotted #f2b75b;color:#f7d9a1;cursor:help}
+  .fact{background:#fff;color:var(--ink);padding:11px 12px;border-radius:12px;margin-bottom:8px;box-shadow:var(--sh-1)}
+  .fact strong{display:block;font-size:13px}
+  .fact p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:5px 0 8px}
+  .fact .src{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .fact-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .fact-actions button{border:1px solid var(--line);background:var(--card-2);border-radius:9px;padding:6px 9px;font-size:11px;font-weight:700}
+  .fact-actions button:hover{border-color:#cdd8e4;background:#fff}
+  .consider{background:#fdf8ef;border:1px solid #ecd9b4;color:var(--ink);padding:11px 12px;border-radius:12px;margin-bottom:8px}
+  .consider strong{display:flex;align-items:center;gap:6px;font-size:13px}
+  .consider p{font-size:11.5px;color:#6b5d40;line-height:1.55;margin:5px 0 8px}
+  .consider details{font-size:11.5px;color:#57534a;margin:7px 0}
+  .consider summary{cursor:pointer;font-weight:800;color:#8a6d2f}
+  .consider details ul{margin:7px 0 0;padding-left:16px;line-height:1.7}
+  .audit-strip{border-top:1px solid rgba(255,255,255,.12);padding:10px 15px;font-size:10px;color:#8fa3b8;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* ============ hospital board ============ */
+  .due-rail{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .due-rail .pill{flex:0 0 auto;scroll-snap-align:start}
+  .board{display:grid;grid-template-columns:repeat(5,minmax(232px,1fr));gap:13px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .board.ward .patient-card{font-size:15px}
+  .board.ward .care-line{font-size:14px;padding:8px 0}
+  .board.ward .patient-card h4{font-size:18px}
+  .column{background:var(--bg-2);border:1px solid var(--line-soft);border-radius:var(--r);padding:11px;min-height:120px;scroll-snap-align:start}
+  .column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .column-head h3{font-size:13.5px;margin:0;color:var(--navy)}
+  .count{background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--muted);font-weight:700}
+  .patient-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:9px;box-shadow:var(--sh-1);transition:box-shadow .16s var(--ease),transform .16s var(--ease)}
+  .patient-card:hover{box-shadow:var(--sh-2);transform:translateY(-1px)}
+  .patient-card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+  .patient-card h4{margin:0;font-size:14px}
+  .patient-card .meta{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .stat-slot{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .status{display:inline-flex;gap:4px;align-items:center;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:800;white-space:nowrap}
+  .status.s-ok{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok-line)}
+  .status.s-watch{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-line)}
+  .status.s-alert{background:var(--alert-solid);color:#fff}
+  .checkfrac{margin:10px 0 6px;font-size:11px;font-weight:700;color:var(--navy);line-height:1.5}
+  .checkfrac .bar{display:flex;gap:3px;margin-top:5px}
+  .checkfrac .seg{height:6px;flex:1;border-radius:3px;background:#e4eaf0}
+  .checkfrac .seg.done{background:var(--teal)}
+  .care-line{font-size:11px;padding:6px 0;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .care-line b{color:var(--navy);text-align:right}
+  .card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:6px;flex-wrap:wrap}
+  .footer-note{color:var(--muted);font-size:11px;text-align:right;margin-top:14px}
+
+  /* ============ modals ============ */
+  .overlay{position:fixed;inset:0;background:rgba(11,22,40,.55);display:none;place-items:center;z-index:60;padding:20px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  .overlay.open{display:grid;animation:fade .18s var(--ease)}
+  .modal{background:#fff;border-radius:var(--r-xl);max-width:560px;width:100%;max-height:min(90vh,900px);overflow:auto;box-shadow:var(--sh-modal);animation:rise .24s var(--ease)}
+  @keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+  .modal-head{padding:17px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;background:#fff;z-index:1}
+  .modal-head h3{margin:0;font-size:16.5px;color:var(--navy)}
+  .modal-body{padding:18px 20px}
+  .modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;position:sticky;bottom:0;background:#fff}
+  .sev-row{display:flex;gap:8px;margin:6px 0 2px;flex-wrap:wrap}
+  .sev{flex:1 1 110px;border:1px solid var(--line);border-radius:11px;padding:11px;text-align:center;font-weight:800;font-size:13px;background:#fff}
+  .sev:hover{border-color:#cdd8e4}
+  .sev.active{border-color:var(--alert-line);background:var(--alert-soft);color:var(--alert)}
+  .route-preview{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:12px;color:var(--muted);line-height:1.75;margin-top:12px}
+  .diffline{font-size:12px;padding:8px 11px;border-radius:9px;margin-bottom:6px;line-height:1.55}
+  .diffline.ai{background:#f1ecfd}
+  .diffline.human{background:var(--ok-soft)}
+
+  /* scrim behind the mobile nav drawer */
+  .scrim{position:fixed;inset:0;background:rgba(11,22,40,.5);opacity:0;pointer-events:none;transition:opacity .22s var(--ease);z-index:35;backdrop-filter:blur(2px)}
+  body.nav-open .scrim{opacity:1;pointer-events:auto}
+  body.nav-open{overflow:hidden}
+
+  /* ============ role visibility ============ */
+  [data-role="reception"] .r-vet,[data-role="reception"] .r-nurse,[data-role="reception"] .r-director{display:none}
+  [data-role="vet"] .r-reception,[data-role="vet"] .r-nurse,[data-role="vet"] .r-director{display:none}
+  [data-role="nurse"] .r-reception,[data-role="nurse"] .r-vet,[data-role="nurse"] .r-director{display:none}
+  [data-role="director"] .r-reception,[data-role="director"] .r-vet,[data-role="director"] .r-nurse{display:none}
+  [data-role="reception"] .nav-admin,[data-role="vet"] .nav-admin,[data-role="nurse"] .nav-admin{display:none}
+
+  /* ============================================================
+     RESPONSIVE
+     ≥1440 roomy · 1200–1440 tighter 3-col · 1024–1200 icon rail
+     768–1024 stacked · <768 drawer nav, single column, sheets
+     ============================================================ */
+
+  @media (min-width:1600px){
+    :root{--pad-x:34px;--gap:17px;--nav-w:268px}
+    .content{max-width:1720px}
+  }
+
+  @media (max-width:1400px){
+    .consult-grid{grid-template-columns:230px minmax(0,1fr)}
+    .scribe{grid-column:1 / -1}
+  }
+
+  @media (max-width:1200px){
+    :root{--pad-x:22px;--nav-w:220px}
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .layout-2{grid-template-columns:minmax(0,1.45fr) minmax(280px,.95fr)}
+    .board{grid-template-columns:repeat(5,minmax(224px,1fr))}
+  }
+
+  /* icon rail — enough room for a sidebar, not for its labels */
+  @media (max-width:1024px){
+    :root{--nav-w:76px}
+    .sidebar{padding:16px 10px;align-items:stretch}
+    .brand div:last-child,.navitem>span:last-child,.navitem .flag,
+    .clinic-status,.user-mini div:last-child,.role-switch label{display:none}
+    .brand{justify-content:center;padding:4px 0 14px}
+    .navitem{justify-content:center;padding:11px 0;position:relative}
+    .navitem .ico{width:auto}
+    .navitem .cnt{position:absolute;top:4px;right:6px;margin:0;font-size:9px;padding:0 5px}
+    .role-switch{padding:6px;margin:0 0 12px}
+    .role-switch select{padding:6px 4px;font-size:11px;text-align:center}
+    .user-mini{justify-content:center;padding:6px 0}
+    .layout-2,.split,.intake-grid,.rx-grid,.consult-grid{grid-template-columns:minmax(0,1fr)}
+    .scribe{position:static}
+    .info-row{grid-template-columns:100px minmax(0,1fr)}
+  }
+
+  /* ---- drawer nav: below this the rail costs more than it gives ---- */
+  @media (max-width:820px){
+    :root{--pad-x:16px;--gap:13px;--top-h:62px;--tap:42px}
+    .app{grid-template-columns:minmax(0,1fr)}
+    .sidebar{
+      position:fixed;top:0;left:0;bottom:0;width:min(280px,84vw);height:100dvh;padding:16px 12px;
+      transform:translateX(-102%);transition:transform .26s var(--ease);
+      box-shadow:0 0 0 rgba(0,0,0,0);will-change:transform;
+    }
+    body.nav-open .sidebar{transform:none;box-shadow:24px 0 60px rgba(8,18,36,.34)}
+    /* restore full labels inside the drawer */
+    .brand div:last-child,.navitem>span:last-child,.navitem .flag,
+    .clinic-status,.user-mini div:last-child,.role-switch label{display:block}
+    .navitem>span:last-child,.navitem .flag{display:inline}
+    .brand{justify-content:flex-start;padding:4px 8px 16px}
+    .navitem{justify-content:flex-start;padding:12px}
+    .navitem .cnt{position:static;margin-left:auto;font-size:11px;padding:1px 7px}
+    .navitem .flag{margin-left:auto}
+    .role-switch{padding:10px;margin:0 4px 14px}
+    .role-switch select{padding:9px;font-size:13px;text-align:left}
+    .user-mini{justify-content:flex-start;padding:8px}
+
+    .menu-btn{display:inline-grid}
+    .topbar{padding:9px var(--pad-x);gap:8px}
+    .search{flex:1 1 auto}
+    .content{padding:18px var(--pad-x) 40px}
+
+    .page-head{gap:12px;margin-bottom:16px}
+    .head-actions{width:100%}
+    .stats{gap:11px}
+    .board{grid-template-columns:repeat(5,minmax(min(78vw,270px),1fr));gap:11px}
+    .exam-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tabs{padding:0 8px}
+    .task-row,.card-body,.card-head{padding-left:14px;padding-right:14px}
+    .task-group{padding-left:14px;padding-right:14px}
+  }
+
+  @media (max-width:600px){
+    :root{--pad-x:13px;--r-lg:16px}
+    body{font-size:14.5px}
+    /* search collapses to an icon and reopens as a full-width second row */
+    .search{display:none}
+    .search-btn{display:inline-grid}
+    body.search-open .topbar{flex-wrap:wrap}
+    body.search-open .search{display:flex;flex:1 1 100%;order:3}
+    .top-actions{margin-left:auto}
+    .danger-btn,.primary{padding:10px 12px;font-size:13.5px}
+
+    .ack-btn,.esc-btn,.fchip,.tab{min-height:36px}   /* thumb-sized on phones */
+    .stats{grid-template-columns:minmax(0,1fr);gap:9px}
+    .stat{padding:13px 15px}
+    .stat .value{font-size:24px}
+
+    .page-head h1{font-size:21px}
+    .page-head p{font-size:13.5px}
+
+    /* rows: let the right-hand chips drop under the content instead of squeezing it */
+    .rowline{flex-wrap:wrap}
+    .rowline>div:nth-child(2){flex:1 1 60%;min-width:0}
+    .row-right{margin-left:0;width:100%;justify-content:flex-start;padding-left:47px}
+    .task-row{flex-wrap:wrap}
+    .task-row>div:nth-child(2){flex:1 1 70%;min-width:0}
+    .task-row .row-right{padding-left:29px}
+
+    /* time sits on its own line so the name never truncates */
+    .schedule-row{grid-template-columns:44px minmax(0,1fr);column-gap:11px;row-gap:7px;align-items:start;padding:12px 0}
+    .schedule-row .time{grid-column:1 / -1;grid-row:1;font-size:12px;color:var(--teal-600);letter-spacing:.02em}
+    .schedule-row .pet-avatar{grid-column:1;grid-row:2}
+    .schedule-row>div:nth-child(3){grid-column:2;grid-row:2;min-width:0}
+    .schedule-row .row-right{grid-column:2;grid-row:3;width:auto;margin-left:0;padding-left:0}
+    .schedule-row.now{margin-left:-8px;padding-left:8px}
+
+    .info-row{grid-template-columns:minmax(0,1fr);gap:2px;padding-bottom:2px}
+    .info-row span:first-child{font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+    .exam-grid{grid-template-columns:minmax(0,1fr)}
+    .board{grid-template-columns:repeat(5,minmax(84vw,1fr));scroll-snap-type:x mandatory}
+    .stage-chip{flex:1 1 calc(50% - 4px)}
+    .sev{flex:1 1 100%}
+    .quick-actions .soft-btn,.quick-actions .danger-btn,.outcome-row .soft-btn,.outcome-row .primary,.outcome-row .danger-btn{flex:1 1 auto}
+
+    /* modals become bottom sheets */
+    .overlay{padding:0;place-items:end stretch}
+    .modal{max-width:none;border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:92dvh;animation:sheet .26s var(--ease)}
+    @keyframes sheet{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
+    .modal-foot{flex-direction:column-reverse;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+    .modal-foot button{width:100%}
+  }
+
+  @media (max-width:380px){
+    .head-actions .date-chip{width:100%;text-align:center}
+    .top-actions .primary{display:none}        /* + New task stays reachable from the pages */
+  }
+
+  /* pointer/motion preferences */
+  @media (hover:none){
+    :root{--tap:42px}
+    .ack-btn,.esc-btn,.fchip,.soft-btn{min-height:36px}
+    .patient-card:hover,button.stat:hover{transform:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+  }
+
+  @media print{
+    .sidebar,.topbar,.scrim,.overlay{display:none !important}
+    .app{display:block}
+    .card{break-inside:avoid;box-shadow:none}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body data-role="reception">
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brandmark">🐾</div>
+      <div><strong>Andale Care Hub</strong><span>Practice operations · concept v2</span></div>
+    </div>
+    <div class="role-switch">
+      <label for="roleSel">Viewing as</label>
+      <select id="roleSel" aria-label="Switch demo role">
+        <option value="reception">Natalie G · Head Receptionist</option>
+        <option value="vet">Matthew H · Veterinary Surgeon</option>
+        <option value="nurse">Catherine D · Head RVN</option>
+        <option value="director">Debbie R · Practice Director</option>
+      </select>
+    </div>
+    <nav>
+      <button class="navitem active" data-page="today"><span class="ico">⌂</span><span>Today</span></button>
+      <button class="navitem" data-page="tasks"><span class="ico">✓</span><span>Tasks &amp; Handover</span><span class="cnt">2</span></button>
+      <button class="navitem" data-page="intake"><span class="ico">☎</span><span>Intake</span></button>
+      <button class="navitem" data-page="patient"><span class="ico">🐕</span><span>Clients &amp; Patients</span></button>
+      <button class="navitem" data-page="rx"><span class="ico">Rx</span><span>Prescriptions</span><span class="cnt">3</span></button>
+      <button class="navitem" data-page="hospital"><span class="ico">▦</span><span>Hospital</span></button>
+      <button class="navitem" data-page="consult"><span class="ico">✚</span><span>Consultation</span><span class="flag">PHASE 3</span></button>
+      <button class="navitem"><span class="ico">◫</span><span>Diagnostics</span></button>
+      <button class="navitem nav-admin"><span class="ico">⚙</span><span>Administration</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="clinic-status"><div><span class="dot"></span><b>Open · closes 18:30</b></div><small>Tue 21 Jul · 9 team members in</small></div>
+      <div class="user-mini"><div class="avatar" id="userAvatar">NG</div><div><b id="userName">Natalie Gillan</b><small id="userRole">Head Receptionist</small></div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">☰</button>
+      <div class="search">⌕ <input placeholder="Search clients, patients, microchips or tasks…  ( / )" aria-label="Search" /></div>
+      <div class="top-actions">
+        <button class="icon-btn search-btn" id="searchBtn" aria-label="Search" aria-expanded="false">⌕</button>
+        <button class="danger-btn" onclick="openEsc()">▲ Escalate</button>
+        <button class="primary">+ New task</button>
+        <button class="icon-btn" aria-label="Notifications">🔔</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ================================================== TODAY ================================================== -->
+      <section class="page active" id="today">
+
+        <!-- ---------- Reception variant ---------- -->
+        <div class="r-reception">
+          <div class="page-head">
+            <div><h1>Today — Reception</h1><p>Who is here, who is calling, and what is waiting on us. Every number opens its list.</p></div>
+            <div class="head-actions"><span class="pill brand">● Live · updated 09:32:04</span><div class="date-chip num">Tuesday 21 July 2026 · 09:32</div></div>
+          </div>
+          <div class="grid stats">
+            <button class="stat"><div class="label">Waiting now</div><div class="value num">4</div><div class="sub warn">Longest wait 18 min — Milo B</div></button>
+            <button class="stat"><div class="label">Appointments today</div><div class="value num">26</div><div class="sub">5 done · 1 late · 20 to come</div></button>
+            <button class="stat"><div class="label">Prescriptions</div><div class="value num">6</div><div class="sub">ready to collect · <b style="color:var(--warn)">3 awaiting vet review</b></div></button>
+            <button class="stat"><div class="label">Callbacks due</div><div class="value num">5</div><div class="sub alert">1 overdue — post-op concern</div></button>
+          </div>
+          <div class="grid layout-2">
+            <div class="grid">
+              <div class="card">
+                <div class="card-head"><h2>Waiting room</h2><div class="row-right"><span class="pill warn">4 waiting</span><button class="soft-btn">+ Walk-in</button></div></div>
+                <div class="card-body">
+                  <div class="rowline">
+                    <div class="mini-icon">🐱</div>
+                    <div><div class="item-title">Milo Bell <span class="prov">cat area</span></div><div class="item-meta">Vomiting · triage: <a href="#" onclick="return false">no red flags — N. Gillan 09:12</a> · Dr Houghton, Room 1</div></div>
+                    <div class="row-right"><span class="pill overdue num">waiting 18m</span><button class="ack-btn">In consult</button></div>
+                  </div>
+                  <div class="rowline">
+                    <div class="mini-icon">🐶</div>
+                    <div><div class="item-title">Daisy Carter <span class="prov" style="background:var(--warn-soft);color:var(--warn);border-color:#f0e0bd">⚠ quiet area</span></div><div class="item-meta">Vaccination + skin review · nervous near larger dogs · Dr Crook, Room 2</div></div>
+                    <div class="row-right"><span class="pill due-soon num">waiting 11m</span><button class="ack-btn">In consult</button></div>
+                  </div>
+                  <div class="rowline">
+                    <div class="mini-icon">🐰</div>
+                    <div><div class="item-title">Poppy Moore <span class="prov">rabbit — carrier covered</span></div><div class="item-meta">Nail clip · nurse clinic · RVN Sharrock</div></div>
+                    <div class="row-right"><span class="pill due num">waiting 6m</span><button class="ack-btn">In consult</button></div>
+                  </div>
+                  <div class="rowline">
+                    <div class="mini-icon">🐶</div>
+                    <div><div class="item-title">Alfie Dunn</div><div class="item-meta">Collection — surgical discharge · RVN Trimmer preparing meds</div></div>
+                    <div class="row-right"><span class="pill due num">arrived 09:29</span><button class="ack-btn">Notify nurse</button></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head"><h2>Schedule</h2><div class="row-right"><span class="subtle num">09:32</span><span class="pill brand">● Live</span></div></div>
+                <div class="card-body">
+                  <div class="schedule-row"><div class="time num">09:00</div><div class="pet-avatar">🐱</div><div><div class="patient-name">Milo · Vomiting</div><div class="client-name">James Bell · Dr Houghton · Room 1</div></div><div class="row-right"><span class="pill warn">Waiting 18m</span></div></div>
+                  <div class="schedule-row now"><div class="time num">09:20</div><div class="pet-avatar">🐶</div><div><div class="patient-name">Daisy · Vaccination + skin</div><div class="client-name">Emma Carter · Dr Crook · Room 2</div></div><div class="row-right"><span class="pill warn">Waiting 11m</span></div></div>
+                  <div class="schedule-row"><div class="time num">09:40</div><div class="pet-avatar">🐰</div><div><div class="patient-name">Poppy · Nail clip</div><div class="client-name">Leah Moore · RVN Sharrock · Nurse room</div></div><div class="row-right"><span class="pill ok">Checked in</span></div></div>
+                  <div class="schedule-row"><div class="time num">10:00</div><div class="pet-avatar">🐶</div><div><div class="patient-name">Barney · Skin review</div><div class="client-name">Noah Green · Dr Crook · Room 2</div></div><div class="row-right"><button class="ack-btn">Check in</button></div></div>
+                  <div class="schedule-row"><div class="time num">10:20</div><div class="pet-avatar">🐱</div><div><div class="patient-name">Luna · Dental check</div><div class="client-name">Olivia Price · Dr Houghton · Room 1</div></div><div class="row-right"><span class="pill plain">Booked</span></div></div>
+                  <div style="text-align:center;padding-top:10px"><button class="soft-btn">Show all 26 ↓</button></div>
+                </div>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="card">
+                <div class="card-head"><h3>Needs attention</h3><span class="pill alert">4 items · 2 clinical</span></div>
+                <div class="card-body">
+                  <div class="rowline">
+                    <div class="mini-icon" style="background:var(--alert-soft)">⚠</div>
+                    <div><div class="item-title">Abnormal lab result unacknowledged</div><div class="item-meta">Archie Jones · haematology · owner: <b>Dr Houghton</b> · escalates to Dr Crook at 30 min</div></div>
+                    <div class="row-right"><span class="pill overdue num">24m</span><button class="ack-btn" onclick="ackItem(this)">Acknowledge</button></div>
+                  </div>
+                  <div class="rowline">
+                    <div class="mini-icon" style="background:var(--alert-soft)">☎</div>
+                    <div><div class="item-title">Post-op callback overdue</div><div class="item-meta">Sophie Lang re: Alfie · owner: <b>RVN Trimmer</b> · due 09:00</div></div>
+                    <div class="row-right"><span class="pill overdue num">32m</span><button class="ack-btn" onclick="ackItem(this)">Acknowledge</button></div>
+                  </div>
+                  <div class="rowline">
+                    <div class="mini-icon" style="background:var(--warn-soft)">Rx</div>
+                    <div><div class="item-title">3 repeat prescriptions near SLA</div><div class="item-meta">Oldest 26h · owner: <b>duty vet (Dr Houghton)</b> · target 48h</div></div>
+                    <div class="row-right"><span class="pill due-soon num">26h</span><button class="ack-btn" data-page-link="rx">Open queue</button></div>
+                  </div>
+                  <div class="rowline">
+                    <div class="mini-icon" style="background:var(--info-soft)">✉</div>
+                    <div><div class="item-title">Records request from PDSA</div><div class="item-meta">Transfer out — Bruno Kelly · owner: <b>S. Coles</b> · due today</div></div>
+                    <div class="row-right"><span class="pill due">today</span><button class="ack-btn" onclick="ackItem(this)">Acknowledge</button></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head"><h3>Expected collections</h3><span class="pill plain">3 today</span></div>
+                <div class="card-body">
+                  <div class="rowline"><div class="mini-icon">💊</div><div><div class="item-title">Apoquel — Daisy Carter</div><div class="item-meta">Ready · paid · shelf B2</div></div><div class="row-right"><span class="pill ok">Ready</span></div></div>
+                  <div class="rowline"><div class="mini-icon">🐶</div><div><div class="item-title">Alfie Dunn — surgical discharge</div><div class="item-meta">10:30 · discharge appt with RVN Trimmer</div></div><div class="row-right"><span class="pill due num">10:30</span></div></div>
+                  <div class="rowline"><div class="mini-icon">💊</div><div><div class="item-title">Metacam — Tilly Shaw</div><div class="item-meta">Being prepared · dispensary</div></div><div class="row-right"><span class="pill plain">Preparing</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- Vet variant ---------- -->
+        <div class="r-vet">
+          <div class="page-head">
+            <div><h1>Today — Dr Houghton</h1><p>Your consultations, your open loops, and anything escalated to you.</p></div>
+            <div class="head-actions"><span class="pill brand">● Live</span><div class="date-chip num">Tuesday 21 July 2026 · 09:32</div></div>
+          </div>
+          <div class="grid stats">
+            <button class="stat"><div class="label">My consults today</div><div class="value num">11</div><div class="sub">next: Milo Bell — waiting 18 min</div></button>
+            <button class="stat"><div class="label">Results to review</div><div class="value num">3</div><div class="sub alert">1 abnormal — Archie, 24 min</div></button>
+            <button class="stat"><div class="label">Unsigned notes</div><div class="value num">2</div><div class="sub warn">oldest from yesterday 16:40</div></button>
+            <button class="stat"><div class="label">Rx to authorise</div><div class="value num">3</div><div class="sub warn">oldest 26h of 48h target</div></button>
+          </div>
+          <div class="grid layout-2">
+            <div class="card">
+              <div class="card-head"><h2>My consultation list</h2><span class="pill warn">running 12 min behind</span></div>
+              <div class="card-body">
+                <div class="schedule-row now"><div class="time num">09:00</div><div class="pet-avatar">🐱</div><div><div class="patient-name">Milo Bell · Vomiting</div><div class="client-name">triaged — no red flags · waiting 18 min</div></div><div class="row-right"><button class="primary">Start consult</button></div></div>
+                <div class="schedule-row"><div class="time num">10:20</div><div class="pet-avatar">🐱</div><div><div class="patient-name">Luna Price · Dental check</div><div class="client-name">estimate on file · PHC Essential</div></div><div class="row-right"><span class="pill plain">Booked</span></div></div>
+                <div class="schedule-row"><div class="time num">10:40</div><div class="pet-avatar">🐶</div><div><div class="patient-name">Frankie Wood · Lameness</div><div class="client-name">recheck — seen 14 Jul</div></div><div class="row-right"><span class="pill plain">Booked</span></div></div>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="card">
+                <div class="card-head"><h3>Open loops</h3><span class="pill alert">1 clinical</span></div>
+                <div class="card-body">
+                  <div class="rowline"><div class="mini-icon" style="background:var(--alert-soft)">⚠</div><div><div class="item-title">Archie Jones — abnormal haematology</div><div class="item-meta">You ordered 20 Jul · escalates to Dr Crook at 30 min</div></div><div class="row-right"><span class="pill overdue num">24m</span><button class="ack-btn" onclick="ackItem(this)">Review</button></div></div>
+                  <div class="rowline"><div class="mini-icon" style="background:var(--warn-soft)">✎</div><div><div class="item-title">2 unsigned notes</div><div class="item-meta">Frankie Wood (yesterday) · Oscar Hall (yesterday)</div></div><div class="row-right"><span class="pill due-soon">sign today</span></div></div>
+                  <div class="rowline"><div class="mini-icon" style="background:var(--warn-soft)">Rx</div><div><div class="item-title">3 repeats to authorise</div><div class="item-meta">1 needs re-exam decision (assessment stale)</div></div><div class="row-right"><button class="ack-btn" data-page-link="rx">Open queue</button></div></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head"><h3>Escalated to me</h3><span class="pill plain">1</span></div>
+                <div class="card-body">
+                  <div class="rowline"><div class="mini-icon" style="background:var(--alert-soft)">▲</div><div><div class="item-title">Nala — temp trending down in recovery</div><div class="item-meta">Raised by RVN Chadwick 09:28 · severity: concern</div></div><div class="row-right"><button class="ack-btn" onclick="ackItem(this)">Acknowledge</button></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- Nurse variant ---------- -->
+        <div class="r-nurse">
+          <div class="page-head">
+            <div><h1>Today — Nursing</h1><p>Everything due across the ward, your assigned patients and clinics, and entries awaiting countersign.</p></div>
+            <div class="head-actions"><span class="pill brand">● Live</span><div class="date-chip num">Tuesday 21 July 2026 · 09:32</div></div>
+          </div>
+          <div class="card" style="margin-bottom:15px"><div class="card-body">
+            <div class="zone-label" style="color:var(--muted)">Next due across the ward</div>
+            <div class="due-rail">
+              <span class="pill overdue num">Archie · fluids 09:25 · +7m</span>
+              <span class="pill overdue num">Nala · obs 09:28 · +4m</span>
+              <span class="pill due-soon num">Cooper · obs 09:35</span>
+              <span class="pill due-soon num">Tilly · meds 09:45</span>
+              <span class="pill due num">Bella · pre-med 10:05</span>
+            </div>
+          </div></div>
+          <div class="grid layout-2">
+            <div class="card">
+              <div class="card-head"><h2>My patients</h2><button class="soft-btn" data-page-link="hospital">Open board</button></div>
+              <div class="card-body">
+                <div class="rowline"><div class="mini-icon">🐶</div><div><div class="item-title">Archie Jones — gastroenteritis</div><div class="item-meta">Fluids due 09:25 · vet: Dr Crook · <b>escalation open</b></div></div><div class="row-right"><span class="pill overdue num">+7m</span><button class="esc-btn" onclick="openEsc()">▲</button></div></div>
+                <div class="rowline"><div class="mini-icon">🐱</div><div><div class="item-title">Nala — post-imaging recovery</div><div class="item-meta">Obs due 09:28 · temp 37.6 ↓ · vet: Dr Houghton</div></div><div class="row-right"><span class="pill overdue num">+4m</span><button class="esc-btn" onclick="openEsc()">▲</button></div></div>
+                <div class="rowline"><div class="mini-icon">🐶</div><div><div class="item-title">Tilly — pancreatitis</div><div class="item-meta">Meds 09:45 · eating small amounts · vet: Dr Crook</div></div><div class="row-right"><span class="pill due-soon num">09:45</span></div></div>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="card">
+                <div class="card-head"><h3>Nurse clinics</h3><span class="pill plain">4 today</span></div>
+                <div class="card-body">
+                  <div class="rowline"><div class="mini-icon">🐰</div><div><div class="item-title">Poppy Moore — nail clip</div><div class="item-meta">09:40 · waiting · PHC included</div></div><div class="row-right"><span class="pill ok">Checked in</span></div></div>
+                  <div class="rowline"><div class="mini-icon">🐶</div><div><div class="item-title">Rex Palmer — weight clinic</div><div class="item-meta">11:00 · 3rd visit</div></div><div class="row-right"><span class="pill plain">Booked</span></div></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-head"><h3>Awaiting countersign</h3><span class="pill warn">2 — SVN Lauren</span></div>
+                <div class="card-body">
+                  <div class="rowline"><div class="mini-icon">✎</div><div><div class="item-title">Obs entry — Cooper 09:05</div><div class="item-meta">Draft by SVN Lauren Wright · supervision: you</div></div><div class="row-right"><button class="ack-btn">Countersign</button></div></div>
+                  <div class="rowline"><div class="mini-icon">✎</div><div><div class="item-title">Feeding record — Tilly 08:50</div><div class="item-meta">Draft by SVN Lauren Wright</div></div><div class="row-right"><button class="ack-btn">Countersign</button></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- Director variant ---------- -->
+        <div class="r-director">
+          <div class="page-head">
+            <div><h1>Today — Exceptions</h1><p>Only what needs your attention. Everything healthy stays off this screen.</p></div>
+            <div class="head-actions"><div class="date-chip num">Tuesday 21 July 2026 · 09:32</div></div>
+          </div>
+          <div class="grid stats">
+            <button class="stat"><div class="label">Clinical alerts unacked &gt;15m</div><div class="value num" style="color:var(--alert)">1</div><div class="sub alert">Archie — abnormal result, 24m</div></button>
+            <button class="stat"><div class="label">Unsigned notes &gt;24h</div><div class="value num">0</div><div class="sub ok">All signed same-day this week</div></button>
+            <button class="stat"><div class="label">Rx SLA breaches (7d)</div><div class="value num">1</div><div class="sub warn">avg turnaround 31h of 48h</div></button>
+            <button class="stat"><div class="label">Complaints in window</div><div class="value num">1</div><div class="sub">ack sent day 1 of 5 · resolution day 6 of 56</div></button>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Exception list</h3><span class="subtle">rules: config → Administration</span></div>
+            <div class="card-body">
+              <div class="rowline"><div class="mini-icon" style="background:var(--alert-soft)">⚠</div><div><div class="item-title">Abnormal result unacknowledged 24 min</div><div class="item-meta">Archie Jones · owner Dr Houghton · ladder: Dr Crook at 30m → you at 60m</div></div><div class="row-right"><span class="pill overdue num">24m</span></div></div>
+              <div class="rowline"><div class="mini-icon" style="background:var(--warn-soft)">⏱</div><div><div class="item-title">Waiting time above threshold</div><div class="item-meta">Milo Bell 18 min (threshold 15) · Dr Houghton running behind</div></div><div class="row-right"><span class="pill due-soon num">18m</span></div></div>
+              <div class="rowline"><div class="mini-icon" style="background:var(--info-soft)">👥</div><div><div class="item-title">Thursday PM: no RVN cover in theatre</div><div class="item-meta">R. Trimmer leave · flagged from rota import</div></div><div class="row-right"><button class="ack-btn">Assign</button></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== TASKS & HANDOVER ================================================== -->
+      <section class="page" id="tasks">
+        <div class="page-head">
+          <div><h1>Tasks &amp; Handover</h1><p>Every unresolved action, with an owner, a due time and an escalation route. Nothing lives in memory or on sticky notes.</p></div>
+          <div class="head-actions"><button class="soft-btn" onclick="document.getElementById('handoverCard').scrollIntoView({behavior:'smooth'})">Shift handover</button><button class="primary">+ New task</button></div>
+        </div>
+        <div class="grid layout-2">
+          <div class="card">
+            <div class="tabs">
+              <button class="tab active" data-tab="my">My work <b class="num">(6)</b></button>
+              <button class="tab" data-tab="team">Team <b class="num">(14)</b></button>
+              <button class="tab" data-tab="all">All open <b class="num">(23)</b></button>
+            </div>
+            <div>
+              <div class="task-group alert">Overdue (2)</div>
+              <div class="task-row">
+                <input type="checkbox" aria-label="complete task" />
+                <div><div class="item-title">Call Sophie Lang — post-op check on Alfie</div><div class="item-meta">Patient: Alfie Dunn · category: callback · created by discharge flow 20 Jul</div></div>
+                <div class="row-right"><span class="owner"><span class="avatar">RT</span>RVN Trimmer</span><span class="pill overdue num">due 09:00 · +32m</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+              </div>
+              <div class="task-row">
+                <input type="checkbox" aria-label="complete task" />
+                <div><div class="item-title">Review abnormal haematology — Archie Jones</div><div class="item-meta">Category: diagnostics · auto-created when result filed 09:08</div></div>
+                <div class="row-right"><span class="owner"><span class="avatar">MH</span>Dr Houghton</span><span class="pill overdue num">+24m</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+              </div>
+              <div class="task-group">Due today (3)</div>
+              <div class="task-row">
+                <input type="checkbox" aria-label="complete task" />
+                <div><div class="item-title">Send records to PDSA — Bruno Kelly transfer</div><div class="item-meta">Category: records · client consent on file ✓</div></div>
+                <div class="row-right"><span class="owner"><span class="avatar">SC</span>S. Coles</span><span class="pill due num">17:00</span></div>
+              </div>
+              <div class="task-row">
+                <input type="checkbox" aria-label="complete task" />
+                <div><div class="item-title">Chase external lab — histopathology for Cooper</div><div class="item-meta">Category: diagnostics · sample sent 17 Jul · expected yesterday</div></div>
+                <div class="row-right"><span class="owner"><span class="avatar">CD</span>RVN Dixon</span><span class="pill due-soon num">12:00</span></div>
+              </div>
+              <div class="task-row">
+                <input type="checkbox" aria-label="complete task" checked />
+                <div style="opacity:.55"><div class="item-title" style="text-decoration:line-through">Confirm fasting — Bella (dental, tomorrow)</div><div class="item-meta">Done 09:14 by D. Shelbourne · evidence: call log #4411</div></div>
+                <div class="row-right"><span class="pill ok">Done</span></div>
+              </div>
+              <div class="task-group">This week (1)</div>
+              <div class="task-row">
+                <input type="checkbox" aria-label="complete task" />
+                <div><div class="item-title">Order replacement clipper blades</div><div class="item-meta">Category: equipment · photo attached · raised by VCA H. Evans</div></div>
+                <div class="row-right"><span class="owner"><span class="avatar">CR</span>RVN Rustage</span><span class="pill due">Fri</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card" id="handoverCard">
+              <div class="card-head"><h3>Shift handover — build</h3><span class="pill plain">for 13:00 handover</span></div>
+              <div class="card-body">
+                <p class="subtle" style="margin-top:0">Open items are pulled in automatically from the board and task list. Add risks, then each incoming team member acknowledges.</p>
+                <div class="handover-item"><div class="who"><b>Auto · hospital board</b><span class="pill warn">3 open</span></div>Archie (fluids, escalation open) · Nala (temp watch) · Tilly (meds 09:45, appetite poor)</div>
+                <div class="handover-item"><div class="who"><b>Auto · overdue tasks</b><span class="pill alert">2</span></div>Lang callback (+32m) · Archie result review (+24m)</div>
+                <div class="handover-item"><div class="who"><b>Risk note — RVN Dixon</b><span class="subtle num">09:20</span></div>Nala: recovery slower than expected after imaging sedation. Obs q30min not q60. Escalate temp &lt;37.4.</div>
+                <textarea placeholder="Add a risk or context note…"></textarea>
+                <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="primary">Send for acknowledgement</button></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Previous handover — acknowledgements</h3><span class="pill ok">3 of 4</span></div>
+              <div class="card-body">
+                <div class="rowline"><div class="avatar">MH</div><div><div class="item-title">Dr Houghton</div><div class="item-meta">Acknowledged 08:04</div></div><div class="row-right"><span class="pill ok">✓</span></div></div>
+                <div class="rowline"><div class="avatar">CD</div><div><div class="item-title">RVN Dixon</div><div class="item-meta">Acknowledged 08:01</div></div><div class="row-right"><span class="pill ok">✓</span></div></div>
+                <div class="rowline"><div class="avatar">MS</div><div><div class="item-title">RVN Sharrock</div><div class="item-meta">Acknowledged 08:12</div></div><div class="row-right"><span class="pill ok">✓</span></div></div>
+                <div class="rowline"><div class="avatar">LW</div><div><div class="item-title">SVN Wright</div><div class="item-meta">Not yet acknowledged · reminded 09:00</div></div><div class="row-right"><span class="pill due-soon">pending</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== INTAKE ================================================== -->
+      <section class="page" id="intake">
+        <div class="page-head">
+          <div><h1>Phone &amp; walk-in intake</h1><p>Capture the reason in under a minute. Red flags escalate to the clinical team — reception never diagnoses and the system never reassures.</p></div>
+          <div class="head-actions"><span class="pill plain">☎ line 1 active · 02:41</span></div>
+        </div>
+        <div class="intake-grid">
+          <div class="card">
+            <div class="card-head"><h2>New contact</h2><span class="subtle">started 09:31 · N. Gillan</span></div>
+            <div class="card-body">
+              <div class="field"><label for="in-client">Client / patient</label><input id="in-client" type="text" value="Bell, James — Milo (cat, 4y) ✓ matched" /><span class="prov pms">Merlin · synced 09:31</span></div>
+              <div class="field"><label for="in-reason">Reason for contact</label><textarea id="in-reason">Milo vomited three times since last night. Keeping water down this morning. Owner worried, asking if he should be seen today.</textarea></div>
+              <div class="field">
+                <label>Safety questions <span class="subtle" style="font-weight:400">— operational, not diagnostic (source: practice emergency list)</span></label>
+                <div class="redflags">
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Collapsed, unconscious or unresponsive</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Breathing difficulty, choking or repeated seizures</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Uncontrolled bleeding or deep wound</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Swallowed object or toxin (raisins, rat poison, antifreeze…)</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Unable to urinate (especially male cats)</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Severe vomiting/diarrhoea — 5+ episodes in 12h or blood</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Struggling to give birth / abnormal discharge</span></label>
+                  <label class="rf"><input type="checkbox" onchange="rfToggle(this)"><span>Swollen abdomen or retching (especially large dogs)</span></label>
+                </div>
+              </div>
+              <div class="field"><label>Outcome</label>
+                <div class="outcome-row">
+                  <button class="primary">Book appointment</button>
+                  <button class="soft-btn">Nurse advice callback</button>
+                  <button class="danger-btn" onclick="openEsc()">▲ Clinical escalation</button>
+                  <button class="soft-btn">OOH signpost (logged)</button>
+                </div>
+                <p class="subtle" id="rfWarning" style="display:none;color:var(--alert);font-weight:700;margin:10px 0 0">⚠ Red flag selected — booking is locked until a vet or RVN has triaged. Escalation card is ready to send.</p>
+              </div>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <div class="card-head"><h3>Escalation preview</h3><span class="pill plain">sends to duty clinician</span></div>
+              <div class="card-body">
+                <div class="route-preview"><b>Route:</b> Duty vet — Dr Houghton (in consult)<br><b>If unacknowledged 5 min:</b> → Dr Crook<br><b>If unacknowledged 10 min:</b> → all clinical staff<br><b>Attached:</b> contact note, safety answers, client phone</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Today's intake log</h3><span class="pill plain num">14</span></div>
+              <div class="card-body">
+                <div class="rowline"><div class="mini-icon">☎</div><div><div class="item-title">Tilly Shaw — Metacam repeat</div><div class="item-meta">09:18 · D. Shelbourne · → Rx queue</div></div><div class="row-right"><span class="pill ok">Done</span></div></div>
+                <div class="rowline"><div class="mini-icon">☎</div><div><div class="item-title">New client enquiry — rabbit</div><div class="item-meta">09:05 · S. Greenwood · → registration link sent</div></div><div class="row-right"><span class="pill ok">Done</span></div></div>
+                <div class="rowline"><div class="mini-icon">☎</div><div><div class="item-title">Rex Palmer — weight clinic query</div><div class="item-meta">08:52 · N. Gillan · → booked 11:00</div></div><div class="row-right"><span class="pill ok">Done</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== PATIENT RECORD ================================================== -->
+      <section class="page" id="patient">
+        <div class="page-head">
+          <div><h1>Patient record</h1><p>Shared clinical and operational view. Every fact shows where it came from — staff never guess which system to correct.</p></div>
+          <div class="head-actions"><span class="pill info">Merlin-linked ✓ synced 09:30</span><button class="primary">+ New encounter</button></div>
+        </div>
+        <div class="split">
+          <div class="grid">
+            <div class="card">
+              <div class="card-body">
+                <div class="patient-header">
+                  <div class="pet-photo">🐶<small>photo</small></div>
+                  <div>
+                    <h2>Daisy Carter</h2>
+                    <p>Golden Retriever · Female neutered · 5y 2m · <span class="num">28.4 kg</span></p>
+                    <div class="header-chips">
+                      <span class="pill ok">PHC Plus</span>
+                      <span class="pill warn">⚠ Nervous near larger dogs</span>
+                      <span class="pill plain">NKA ✓</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="quick-actions">
+                  <button class="soft-btn">Book</button><button class="soft-btn">Message</button>
+                  <button class="soft-btn">+ Task</button><button class="danger-btn" onclick="openEsc()">▲ Escalate</button>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Core details</h3><button class="soft-btn">Edit</button></div>
+              <div class="card-body info-list">
+                <div class="info-row"><span>Client</span><b>Emma Carter <span class="prov pms">Merlin</span></b></div>
+                <div class="info-row"><span>Household</span><b>1 other pet — Biscuit (cat) · no balance owing <span class="prov pms">Merlin</span></b></div>
+                <div class="info-row"><span>Microchip</span><b class="num">985141000742618 <span class="prov pms">Merlin</span></b></div>
+                <div class="info-row"><span>Weight</span><b class="num">28.4 kg · 18 Mar 2026 <span class="pill due-soon" style="font-size:10px;padding:2px 7px">4 months old — recheck</span></b>
+                </div>
+                <div class="info-row"><span>Allergies</span><b>No known allergies — asked &amp; confirmed 12 Jun 2026 · G. Tunney MRCVS <span class="prov">Care Hub</span></b></div>
+                <div class="info-row"><span>Medication</span><b>Apoquel 16 mg OD · prescriber Dr Tunney · authorised 03 Jul 2026 <span class="pill due-soon" style="font-size:10px;padding:2px 7px">review before next repeat</span></b></div>
+                <div class="info-row"><span>Insurance</span><b>Petplan · verified 03 Jul 2026 by S. Coles <span class="prov">Care Hub</span></b></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Comfort profile</h3><button class="soft-btn">+ Entry</button></div>
+              <div class="card-body">
+                <div class="comfort">✓ Food motivated<div class="meta">12 Jun 2026 · RVN Sharrock</div></div>
+                <div class="comfort">✓ Prefers owner present<div class="meta">12 Jun 2026 · RVN Sharrock</div></div>
+                <div class="comfort" style="border-color:#f0e0bd;background:var(--warn-soft)">⚠ Nervous near larger dogs — book quiet waiting area<div class="meta">21 May 2026 · N. Gillan · surfaced at check-in ✓</div></div>
+                <div class="comfort">✓ Settles on non-slip mat<div class="meta">12 Jun 2026 · RVN Sharrock</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <div class="card-head"><h3>Clinical summary</h3><span class="pill warn">Skin review due</span></div>
+              <div class="card-body">
+                <div class="concern"><b>Active concern:</b> recurrent allergic dermatitis — review Apoquel response, check ears and paws.<div class="meta">Raised 12 Jun 2026 · Dr Tunney · linked task: "Derm review" → Dr Crook, today · review or resolve at next consult</div></div>
+                <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+                  <button class="stat"><div class="label">Last consult</div><div style="font-weight:800;margin-top:6px" class="num">12 Jun 2026</div></button>
+                  <button class="stat"><div class="label">Vaccination due</div><div style="font-weight:800;margin-top:6px" class="num">19 Jul 2027</div></button>
+                  <button class="stat"><div class="label">Open tasks</div><div style="font-weight:800;margin-top:6px" class="num">2 →</div></button>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Timeline</h3>
+                <div class="filter-chips">
+                  <button class="fchip active">All</button><button class="fchip">Clinical</button><button class="fchip">Meds</button><button class="fchip">Comms</button><button class="fchip">Admin</button>
+                </div>
+              </div>
+              <div class="card-body timeline">
+                <div class="timeline-item"><h4>💉 Vaccination + health check <span class="prov">Care Hub</span></h4><p>Today 09:20 (in progress) · Dr Crook · quiet room used per comfort profile.</p></div>
+                <div class="timeline-item"><h4>💊 Apoquel repeat authorised <span class="prov pms">Merlin</span></h4><p>03 Jul 2026 · Dr Tunney · 30 tablets · <b>review required before next repeat</b>.</p></div>
+                <div class="timeline-item"><h4>🩺 Dermatology consultation <span class="prov pms">Merlin</span></h4><p>12 Jun 2026 · Dr Tunney · paw licking + erythema, Apoquel commenced, NKA confirmed.</p></div>
+                <div class="timeline-item"><h4>✉ Client message <span class="prov">Care Hub</span></h4><p>11 Jun 2026 · Emma uploaded paw photographs, requested appointment · handled by S. Coles.</p></div>
+                <div class="timeline-item"><h4>⚖ Weight recorded <span class="prov pms">Merlin</span></h4><p>18 Mar 2026 · 28.4 kg (stable vs 28.1 kg Nov 2025).</p></div>
+                <div style="padding-left:15px"><button class="soft-btn">Load earlier ↓</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== PRESCRIPTIONS ================================================== -->
+      <section class="page" id="rx">
+        <div class="page-head">
+          <div><h1>Repeat prescriptions</h1><p>One queue, visible to reception and vets, with the clinical gates and the 48-hour service target on every request.</p></div>
+          <div class="head-actions"><span class="pill plain">avg turnaround this month: 31h</span></div>
+        </div>
+        <div class="pipeline">
+          <div class="stage-chip">Received<b class="num">4</b></div>
+          <div class="stage-chip hot">Awaiting review<b class="num">3</b></div>
+          <div class="stage-chip">More info needed<b class="num">1</b></div>
+          <div class="stage-chip">Approved<b class="num">2</b></div>
+          <div class="stage-chip">Being prepared<b class="num">2</b></div>
+          <div class="stage-chip">Ready<b class="num">6</b></div>
+          <div class="stage-chip">Collected today<b class="num">5</b></div>
+        </div>
+        <div class="rx-grid">
+          <div class="card">
+            <div class="card-head"><h2>Awaiting vet review</h2><span class="pill warn">3 · oldest 26h of 48h</span></div>
+            <div class="card-body">
+              <div class="rowline" style="background:var(--teal-soft);margin:0 -10px;padding:11px 10px;border-radius:10px;border-bottom:0">
+                <div class="mini-icon">💊</div>
+                <div><div class="item-title">Tilly Shaw — Metacam 1.5 mg/ml oral susp.</div><div class="item-meta">Requested 20 Jul 09:30 via phone · selected below</div></div>
+                <div class="row-right"><span class="pill due-soon num">26h</span></div>
+              </div>
+              <div class="rowline">
+                <div class="mini-icon">💊</div>
+                <div><div class="item-title">Oscar Hall — Vetmedin 5 mg</div><div class="item-meta">Requested 20 Jul 14:10 via web form · last exam 02 Jun 2026 ✓</div></div>
+                <div class="row-right"><span class="pill due num">19h</span><button class="ack-btn">Review</button></div>
+              </div>
+              <div class="rowline">
+                <div class="mini-icon">💊</div>
+                <div><div class="item-title">Bruno Kelly — Ronaxan 100 mg <span class="pill alert" style="font-size:10px;padding:2px 7px">antimicrobial</span></div><div class="item-meta">Requested today 08:15 · physical exam gate applies</div></div>
+                <div class="row-right"><span class="pill due num">1h</span><button class="ack-btn">Review</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Vet review — Tilly Shaw</h3><span class="pill plain">Terrier · 9y · 7.2 kg</span></div>
+            <div class="card-body">
+              <div class="item-title" style="font-size:15px">Metacam 1.5 mg/ml — 0.35 ml OD with food</div>
+              <div class="flagline">
+                <span class="pill info">POM-V</span>
+                <span class="pill plain">NSAID — long-term</span>
+                <span class="pill plain">not a controlled drug</span>
+              </div>
+              <div class="info-list" style="margin:12px 0">
+                <div class="info-row"><span>Last clinical assessment</span><b>14 Feb 2026 · physical exam · Dr Tunney <span class="pill overdue" style="font-size:10px;padding:2px 7px">157 days — practice limit 180</span></b></div>
+                <div class="info-row"><span>Monitoring</span><b>Renal bloods due — last 14 Feb 2026 <span class="pill due-soon" style="font-size:10px;padding:2px 7px">recommend before next repeat</span></b></div>
+                <div class="info-row"><span>Repeats used</span><b class="num">4 of 6 authorised</b></div>
+                <div class="info-row"><span>Stock</span><b>In stock — dispensary ✓ <span class="prov pms">Merlin</span></b></div>
+              </div>
+              <p class="subtle" style="line-height:1.6">Gate: assessment within practice review window, but monitoring bloods are older than recommended for long-term NSAID use. Options below record the decision and reason against the authorisation.</p>
+              <div class="outcome-row">
+                <button class="primary">Approve — 1 repeat</button>
+                <button class="soft-btn">Approve + book bloods</button>
+                <button class="soft-btn">More info</button>
+                <button class="danger-btn">Decline — needs exam</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== CONSULTATION ================================================== -->
+      <section class="page" id="consult">
+        <div class="phase-banner">PHASE 3 CONCEPT — this workspace assumes clinical notes are mastered in Care Hub, which the Andale deployment cannot do before integration Gate G1. Kept for design continuity; not in the internal MVP. See discovery Part 10.</div>
+        <div class="page-head">
+          <div><h1>Consultation workspace</h1><p>Structured notes with an optional scribe that drafts, shows its uncertainty, and waits for a qualified human.</p></div>
+          <div class="head-actions"><span class="pill warn">Draft — autosaved 14s ago</span></div>
+        </div>
+        <div class="consult-grid">
+          <div class="card">
+            <div class="card-head"><h3>My queue</h3><span class="pill brand num">5 left</span></div>
+            <div class="card-body">
+              <div class="consult-item active"><strong>Daisy Carter</strong><span>09:20 · vacc + skin · in room 11m</span></div>
+              <div class="consult-item"><strong>Barney Green</strong><span>10:00 · skin review</span></div>
+              <div class="consult-item"><strong>Luna Price</strong><span>10:20 · dental check</span></div>
+              <div class="consult-item"><strong>Frankie Wood</strong><span>10:40 · lameness recheck</span></div>
+              <div class="consult-item"><strong>Oscar Hall</strong><span>11:00 · medication review</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3 style="margin-bottom:5px">Daisy Carter</h3>
+                <div class="context-strip">
+                  <span class="pill plain num">28.4 kg</span>
+                  <span class="pill plain">NKA ✓ 12 Jun 26</span>
+                  <span class="pill info">Apoquel 16 mg OD</span>
+                  <span class="pill warn">⚠ nervous of large dogs</span>
+                </div>
+              </div>
+              <span class="pill warn">Draft</span>
+            </div>
+            <div class="card-body">
+              <div class="form-section"><label>Presenting concern <span class="prov">Typed · reception</span></label><div class="input-box">Annual vaccination. Owner also reports increased paw licking over the last two weeks.</div></div>
+              <div class="form-section"><label>Clinical history <span class="prov ai">AI draft — accepted, edited</span></label><textarea>Eating and drinking normally. No vomiting or diarrhoea. Apoquel reduced general itching but paw licking has returned over ~2 weeks. No missed doses reported.</textarea></div>
+              <div class="form-section"><label>Examination <span class="subtle" style="font-weight:400">— entered by clinician only; the scribe cannot write here</span></label>
+                <div class="exam-grid">
+                  <div class="exam-tile"><strong>Weight <span class="prov">Device</span></strong><span class="num">28.4 kg</span></div>
+                  <div class="exam-tile"><strong>Temperature <span class="prov">Typed</span></strong><span class="num">38.4 °C</span></div>
+                  <div class="exam-tile"><strong>Heart rate <span class="prov">Typed</span></strong><span class="num">88 bpm</span></div>
+                  <div class="exam-tile"><strong>Ears <span class="prov">Dictated</span></strong>Mild erythema, both</div>
+                  <div class="exam-tile"><strong>Paws <span class="prov">Dictated</span></strong>Interdigital erythema</div>
+                  <div class="exam-tile emptyt"><strong>Abdomen</strong>Not examined / not recorded</div>
+                </div>
+              </div>
+              <div class="form-section"><label>Assessment &amp; plan <span class="prov">Typed</span></label><textarea>Vaccination administered. Likely recurrence of allergic dermatitis. Cytology offered and accepted — estimate discussed and logged. Continue Apoquel pending results. Review if worsening or secondary infection suspected.</textarea></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+                <span class="subtle">Estimate logged: cytology £62 ✓ · consent: verbal, recorded</span>
+                <div><button class="soft-btn">Save draft</button> <button class="primary" onclick="openSign()">Review &amp; sign</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="scribe">
+            <div class="scribe-ctrl">
+              <span class="rec-dot" aria-hidden="true"></span><b style="font-size:12px" class="num">REC 08:42</b>
+              <button class="ctrl-btn">‖ Pause</button>
+              <button class="ctrl-btn">■ Stop</button>
+              <button class="ctrl-btn">⚑ Mark</button>
+              <button class="ctrl-btn">🎙 Dictate</button>
+              <button class="consent-chip">Consent ✓ · view basis</button>
+            </div>
+            <div class="scribe-body">
+              <div class="zone-label">Transcript</div>
+              <div class="transcript"><b>Client:</b> She has started licking her paws again, mostly in the evenings.<br><br><b>Vet:</b> Has she missed any Apoquel doses?<br><br><b>Client:</b> No, she has had it every day.<br><br><b>Vet:</b> I can see some redness between the toes. I'd like to take a <span class="lowconf" title="Low confidence — tap to correct">sample for cytology</span> to check for yeast or bacteria.</div>
+              <div class="zone-label">Drafted for your note</div>
+              <div class="fact">
+                <strong>History summary</strong>
+                <p>Increased paw licking ~2 weeks despite consistent Apoquel. Otherwise well at home.</p>
+                <div class="src"><span class="pill ok" style="font-size:10px;padding:2px 7px">high confidence</span><span class="prov">from 06:12–06:58</span></div>
+                <div class="fact-actions"><button>Accept</button><button>Edit</button><button>Reject</button></div>
+              </div>
+              <div class="fact">
+                <strong>Medication mention</strong>
+                <p>"Apoquel every day, no missed doses" — owner statement.</p>
+                <div class="src"><span class="pill warn" style="font-size:10px;padding:2px 7px">verify — medication</span><span class="prov">from 06:31</span></div>
+                <div class="fact-actions"><button>Accept</button><button>Edit</button><button>Reject</button></div>
+              </div>
+              <div class="zone-label">Clinical considerations — advisory only</div>
+              <div class="consider">
+                <strong>⚖ Consider interdigital cytology</strong>
+                <p>Recurrent pruritus despite oclacitinib may indicate secondary infection.</p>
+                <details>
+                  <summary>Why is this shown? What was checked?</summary>
+                  <ul>
+                    <li><b>Inputs:</b> transcript mentions of paw licking + current Apoquel from record</li>
+                    <li><b>Checked:</b> current meds (no interaction), NKA status ✓</li>
+                    <li><b>Not checked:</b> examination findings (not yet signed), renal/hepatic status</li>
+                    <li><b>Source:</b> practice dermatology protocol v3 (approved Dr Crook, May 2026)</li>
+                    <li><b>Uncertainty:</b> moderate — based on spoken findings only</li>
+                    <li><b>Still required:</b> your examination, client consent, estimate</li>
+                  </ul>
+                </details>
+                <div class="fact-actions"><button>Use in plan (logged)</button><button>Dismiss (logged)</button></div>
+              </div>
+              <div class="fact" style="background:rgba(255,255,255,.07);color:#c9d6e4;border:1px dashed rgba(255,255,255,.25)">
+                <strong style="color:#c9d6e4">Never generated here</strong>
+                <p style="color:#9fb0c2">Examination findings · doses · diagnoses · client-facing content. Dose <i>cross-checks</i> appear as warnings only.</p>
+              </div>
+            </div>
+            <div class="audit-strip"><span>scribe-v2.4.1</span><span>template derm-v3</span><span>draft #a41f</span><span>consent: verbal · N. Gillan 09:19</span><a href="#" style="color:#8fc7bf" onclick="return false">full audit log →</a></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== HOSPITAL ================================================== -->
+      <section class="page" id="hospital">
+        <div class="page-head">
+          <div><h1>Nursing &amp; hospital board</h1><p>Every patient, both responsible professionals, next action and escalation — with overdue impossible to miss.</p></div>
+          <div class="head-actions">
+            <button class="soft-btn" onclick="document.querySelector('.board').classList.toggle('ward')">Ward mode</button>
+            <button class="soft-btn" data-page-link="tasks">Shift handover</button>
+            <button class="primary">+ Admit</button>
+          </div>
+        </div>
+        <div class="due-rail" aria-label="Next due across the ward">
+          <span class="pill overdue num">Archie · fluids 09:25 · +7m</span>
+          <span class="pill overdue num">Nala · obs 09:28 · +4m</span>
+          <span class="pill due-soon num">Cooper · obs 09:35</span>
+          <span class="pill due-soon num">Tilly · meds 09:45</span>
+          <span class="pill due num">Bella · pre-med 10:05</span>
+          <span class="pill due num">Simba · recovery obs on exit</span>
+        </div>
+        <div class="board">
+          <div class="column">
+            <div class="column-head"><h3>Pre-op</h3><span class="count num">2</span></div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Bella</h4><div class="meta">Spaniel · dental · Kennel 2</div></div><div class="stat-slot"><span class="status s-ok">● OK</span></div></div>
+              <div class="checkfrac">Pre-op 3/5 — consent ✓ · fasted ✓ · IV ✓ · bloods pending · pre-med 10:05<div class="bar"><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg"></span><span class="seg"></span></div></div>
+              <div class="care-line"><span>Vet</span><b>Dr Crook</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Trimmer</b></div>
+              <div class="card-foot"><span class="pill due num">pre-med 10:05</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+            </div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Max</h4><div class="meta">Labrador · castrate · Kennel 5</div></div><div class="stat-slot"><span class="status s-watch">▲ Watch</span></div></div>
+              <div class="checkfrac">Pre-op 2/5 — admission running late, arrived 09:10<div class="bar"><span class="seg done"></span><span class="seg done"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div></div>
+              <div class="care-line"><span>Vet</span><b>Dr Houghton</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Sharrock</b></div>
+              <div class="card-foot"><span class="pill due-soon">admission in progress</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="column-head"><h3>In theatre</h3><span class="count num">1</span></div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Simba</h4><div class="meta">DSH cat · dental · Theatre 1</div></div><div class="stat-slot"><span class="status s-ok">● In theatre</span></div></div>
+              <div class="care-line"><span>Started</span><b class="num">09:12</b></div>
+              <div class="care-line"><span>Vet</span><b>Dr Crook</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Trimmer</b></div>
+              <div class="care-line"><span>Contact</span><b>via theatre only</b></div>
+            </div>
+            <div class="empty" style="margin-top:8px">Board shows facts only — anaesthetic monitoring stays on the anaesthetic record.</div>
+          </div>
+          <div class="column">
+            <div class="column-head"><h3>Recovery</h3><span class="count num">2</span></div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Cooper</h4><div class="meta">Cockapoo · lump removal · Kennel 1</div></div><div class="stat-slot"><span class="status s-ok">● OK</span></div></div>
+              <div class="care-line"><span>Pain score</span><b class="num">1/10 · 09:05 <span class="prov ai" style="font-size:9px">SVN draft — countersign due</span></b></div>
+              <div class="care-line"><span>Vet</span><b>Dr Houghton</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Dixon</b></div>
+              <div class="card-foot"><span class="pill due-soon num">obs 09:35</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+            </div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Nala</h4><div class="meta">Maine Coon · post-imaging · Kennel 3</div></div><div class="stat-slot"><span class="status s-alert">⬤ ALERT</span></div></div>
+              <div class="care-line"><span>Temp</span><b class="num">37.6 °C ↓ trend</b></div>
+              <div class="care-line"><span>Vet</span><b>Dr Houghton</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Chadwick</b></div>
+              <div class="card-foot"><span class="pill overdue num">obs 09:28 · +4m</span><span class="pill acked">▲ acked · Dr Houghton</span></div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="column-head"><h3>Inpatient</h3><span class="count num">2</span></div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Archie</h4><div class="meta">Labrador · gastroenteritis · Kennel 4</div></div><div class="stat-slot"><span class="status s-alert">⬤ ALERT</span></div></div>
+              <div class="care-line"><span>Fluids</span><b class="num">due 09:25 · overdue</b></div>
+              <div class="care-line"><span>Client update</span><b class="num">promised 10:00</b></div>
+              <div class="care-line"><span>Vet</span><b>Dr Crook</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Dixon</b></div>
+              <div class="card-foot"><span class="pill overdue num">+7m</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+            </div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Tilly</h4><div class="meta">Terrier · pancreatitis · Kennel 6</div></div><div class="stat-slot"><span class="status s-watch">▲ Watch</span></div></div>
+              <div class="care-line"><span>Eating</span><b>small amounts ✓</b></div>
+              <div class="care-line"><span>Vet</span><b>Dr Crook</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Dixon</b></div>
+              <div class="card-foot"><span class="pill due-soon num">meds 09:45</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="column-head"><h3>Discharge</h3><span class="count num">2</span></div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Alfie</h4><div class="meta">Beagle · lump removal · ready area</div></div><div class="stat-slot"><span class="status s-ok">● Ready</span></div></div>
+              <div class="checkfrac">Criteria 5/5 — meds ✓ · instructions ✓ · vet sign-off ✓ · invoice ✓ · owner told ✓<div class="bar"><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span></div></div>
+              <div class="care-line"><span>Vet</span><b>Dr Houghton</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Trimmer</b></div>
+              <div class="card-foot"><span class="pill due num">collect 10:30</span></div>
+            </div>
+            <div class="patient-card">
+              <div class="top"><div><h4>Millie</h4><div class="meta">Cat · wound repair · Kennel 7</div></div><div class="stat-slot"><span class="status s-watch">▲ Watch</span></div></div>
+              <div class="checkfrac">Criteria 3/5 — vet sign-off pending · invoice pending<div class="bar"><span class="seg done"></span><span class="seg done"></span><span class="seg done"></span><span class="seg"></span><span class="seg"></span></div></div>
+              <div class="care-line"><span>Vet</span><b>Dr Tunney</b></div>
+              <div class="care-line"><span>Nurse</span><b>RVN Sharrock</b></div>
+              <div class="card-foot"><span class="pill due num">collect 11:15</span><button class="esc-btn" onclick="openEsc()">▲ Escalate</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-note">Concept UI only. Clinical workflows, permissions and terminology require validation with the Andale team.</div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+
+<!-- ============ Escalation overlay (global) ============ -->
+<div class="overlay" id="escOverlay" role="dialog" aria-modal="true" aria-labelledby="escTitle">
+  <div class="modal">
+    <div class="modal-head"><h3 id="escTitle">▲ Raise escalation</h3><button class="icon-btn" onclick="closeEsc()" aria-label="Close">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Patient</label><input type="text" value="Nala — Maine Coon · Kennel 3" /></div>
+      <div class="field"><label>Reason</label>
+        <select>
+          <option>Clinical deterioration</option>
+          <option>Medication or dosage concern</option>
+          <option>Unexpected test result</option>
+          <option>Estimate exceeded</option>
+          <option>Client dissatisfaction</option>
+          <option>Graduate / student support needed</option>
+          <option>Other (describe below)</option>
+        </select>
+      </div>
+      <div class="field"><label>Severity</label>
+        <div class="sev-row">
+          <button class="sev" onclick="pickSev(this)">Concern</button>
+          <button class="sev active" onclick="pickSev(this)">Urgent</button>
+          <button class="sev" onclick="pickSev(this)">Emergency</button>
+        </div>
+      </div>
+      <div class="field"><label>Note</label><textarea placeholder="Temp 37.6 and trending down 30 min post-imaging. Warming in place. Please review.">Temp 37.6 and trending down 30 min post-imaging. Warming in place. Please review.</textarea></div>
+      <div class="route-preview"><b>Route (urgent):</b> Dr Houghton (responsible vet) — notified immediately<br><b>Unacknowledged 5 min →</b> Dr Crook (senior vet)<br><b>Unacknowledged 10 min →</b> all clinical staff + Head RVN<br><b>Logged:</b> raise, every acknowledgement and the resolution, on the patient record</div>
+    </div>
+    <div class="modal-foot"><button class="soft-btn" onclick="closeEsc()">Cancel</button><button class="danger-btn" onclick="closeEsc()">▲ Raise escalation</button></div>
+  </div>
+</div>
+
+<!-- ============ Sign & complete flow ============ -->
+<div class="overlay" id="signOverlay" role="dialog" aria-modal="true" aria-labelledby="signTitle">
+  <div class="modal">
+    <div class="modal-head"><h3 id="signTitle">Review &amp; sign — Daisy Carter</h3><button class="icon-btn" onclick="closeSign()" aria-label="Close">✕</button></div>
+    <div class="modal-body">
+      <p class="subtle" style="margin-top:0"><b>1 · AI-drafted content in this note</b> — confirm you have reviewed the differences:</p>
+      <div class="diffline ai"><b>AI draft:</b> "…paw licking has returned. No missed doses."</div>
+      <div class="diffline human"><b>Your version:</b> "…paw licking has returned <b>over ~2 weeks</b>. No missed doses <b>reported</b>."</div>
+      <p class="subtle"><b>2 · Attestation</b></p>
+      <div class="handover-item">I confirm this record is accurate, that examination findings were entered or dictated by me, and that AI-drafted content has been reviewed and edited where required. — <b>C. Crook MRCVS</b></div>
+      <p class="subtle"><b>3 · Before this consult closes</b> — choose at least one:</p>
+      <div class="redflags">
+        <label class="rf"><input type="checkbox" checked><span>Create task: chase cytology result — Dr Crook, due Thu</span></label>
+        <label class="rf"><input type="checkbox" checked><span>Book recheck: 2 weeks — reception queue</span></label>
+        <label class="rf"><input type="checkbox"><span>Callback: cytology result to Emma Carter when reviewed</span></label>
+        <label class="rf"><input type="checkbox"><span>No follow-up needed — record why</span></label>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="soft-btn" onclick="closeSign()">Back to note</button><button class="primary" onclick="closeSign()">Sign record ✓</button></div>
+  </div>
+</div>
+
+<script>
+  // page navigation
+  const params = new URLSearchParams(location.search);
+  function showPage(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));
+    document.querySelectorAll('.navitem[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+    const url = new URL(location.href); url.searchParams.set('page',id); history.replaceState({},'',url);
+  }
+  document.querySelectorAll('.navitem[data-page]').forEach(btn=>btn.addEventListener('click',()=>{showPage(btn.dataset.page);closeNav();}));
+  document.querySelectorAll('[data-page-link]').forEach(btn=>btn.addEventListener('click',()=>showPage(btn.dataset.pageLink)));
+  showPage(params.get('page') || 'today');
+
+  // mobile navigation drawer
+  const menuBtn=document.getElementById('menuBtn');
+  const scrim=document.getElementById('scrim');
+  function openNav(){
+    document.body.classList.add('nav-open');
+    menuBtn.setAttribute('aria-expanded','true');
+    document.getElementById('sidebar').querySelector('.navitem').focus({preventScroll:true});
+  }
+  function closeNav(){
+    if(!document.body.classList.contains('nav-open')) return;
+    document.body.classList.remove('nav-open');
+    menuBtn.setAttribute('aria-expanded','false');
+  }
+  menuBtn.addEventListener('click',()=>document.body.classList.contains('nav-open')?closeNav():openNav());
+  scrim.addEventListener('click',closeNav);
+  // the drawer only exists below 820px — never leave it stuck open on resize
+  const wide=matchMedia('(min-width:821px)');
+  wide.addEventListener('change',e=>{if(e.matches)closeNav()});
+
+  // collapsed search on small screens
+  const searchBtn=document.getElementById('searchBtn');
+  searchBtn.addEventListener('click',()=>{
+    const open=document.body.classList.toggle('search-open');
+    searchBtn.setAttribute('aria-expanded',String(open));
+    if(open) document.querySelector('.search input').focus();
+  });
+
+  // role switching
+  const users={
+    reception:{n:'Natalie Gillan',r:'Head Receptionist',a:'NG'},
+    vet:{n:'Matthew Houghton',r:'Veterinary Surgeon',a:'MH'},
+    nurse:{n:'Catherine Dixon',r:'Head RVN',a:'CD'},
+    director:{n:'Debbie Roden',r:'Practice Director',a:'DR'}
+  };
+  document.getElementById('roleSel').addEventListener('change',e=>{
+    const v=e.target.value;
+    document.body.dataset.role=v;
+    document.getElementById('userName').textContent=users[v].n;
+    document.getElementById('userRole').textContent=users[v].r;
+    document.getElementById('userAvatar').textContent=users[v].a;
+    showPage('today');
+    closeNav();
+  });
+
+  // tasks tabs (visual only in concept)
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+  }));
+
+  // acknowledge behaviour
+  function ackItem(btn){
+    const holder=btn.closest('.row-right');
+    holder.innerHTML='<span class="pill acked">✓ acked · '+ (document.getElementById('userName').textContent.split(' ').map(w=>w[0]).join('. ')) +'. · 09:32</span>';
+  }
+
+  // red-flag lock
+  function rfToggle(cb){
+    cb.closest('.rf').classList.toggle('checked',cb.checked);
+    const any=[...document.querySelectorAll('#intake .rf input')].some(i=>i.checked);
+    document.getElementById('rfWarning').style.display=any?'block':'none';
+  }
+
+  // modals
+  function openEsc(){document.getElementById('escOverlay').classList.add('open')}
+  function closeEsc(){document.getElementById('escOverlay').classList.remove('open')}
+  function openSign(){document.getElementById('signOverlay').classList.add('open')}
+  function closeSign(){document.getElementById('signOverlay').classList.remove('open')}
+  document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape') return;
+    document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
+    closeNav();
+  });
+  function pickSev(btn){btn.closest('.sev-row').querySelectorAll('.sev').forEach(s=>s.classList.toggle('active',s===btn))}
+</script>
+</body>
+</html>

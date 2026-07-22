@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Andale Care Hub
 
-## Getting Started
+Practice-operations app for Andale Veterinary Centre. Built on Next.js (App Router).
 
-First, run the development server:
+The UI is the build of `docs/design/prototype-iteration-2.html` — see
+[docs/design/ui-review-iteration-2-changelog.md](docs/design/ui-review-iteration-2-changelog.md)
+for how the screens map back to the design review, and `docs/discovery/` for the research
+the screens are answering.
+
+## Getting started
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 — `/` redirects to `/today`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route             | Screen                                                              |
+| ----------------- | ------------------------------------------------------------------- |
+| `/today`          | Four role variants: reception, vet, nursing, director exceptions     |
+| `/tasks`          | Task queues and shift handover with acknowledgements                 |
+| `/intake`         | Phone and walk-in intake, with the red-flag booking lock             |
+| `/patient`        | Patient record — provenance on every fact                            |
+| `/rx`             | Repeat-prescription queue and the vet-review gates                   |
+| `/hospital`       | Nursing and hospital board (ward mode enlarges it for the wall)      |
+| `/consult`        | Consultation workspace + scribe — **Phase 3 concept, not in MVP**    |
+| `/diagnostics`    | Placeholder — not designed yet                                       |
+| `/administration` | Placeholder — Practice Director only                                 |
 
-## Learn More
+## How it is put together
 
-To learn more about Next.js, take a look at the following resources:
+- `app/globals.css` — the whole design system: semantic colour tokens, the controlled status
+  vocabulary (red is clinical-only), and every breakpoint. Hand-authored, no Tailwind preflight,
+  so this file is the single source of truth for styling.
+- `components/app-shell.tsx` — sidebar, topbar, and the off-canvas drawer used below 820px.
+- `components/providers.tsx` — demo role switching and the two global dialogs (escalation,
+  sign-and-complete), both reachable from every screen.
+- `components/ui.tsx` — presentational primitives (cards, pills, rows, stats).
+- `components/interactive.tsx` — the client-side behaviour: acknowledge, red-flag lock, tabs,
+  ward mode, escalation entry points.
+- `lib/nav.ts` — navigation model and the demo staff list.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Role switching is a demo affordance in the sidebar; in the real product it comes from the session.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Status
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Concept UI. Clinical workflows, permissions and terminology still require validation with the
+Andale team, and the data on every screen is a plausible Tuesday, not real records.

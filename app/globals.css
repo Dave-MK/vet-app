@@ -1,26 +1,206 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   Andale Care Hub — design tokens
+   Everything below becomes a real Tailwind utility: colours give
+   bg, text and border utilities, radii give rounded ones, shadows
+   give shadow ones.
+   Semantic naming only (see docs/design/ui-review-iteration-1.md §11):
+   red is CLINICAL urgency, amber is operational, teal is brand.
+   ============================================================ */
+@theme {
+  /* brand */
+  --color-navy: #12263f;
+  --color-navy-2: #1b3a5c;
+  --color-navy-deep: #0a1729;
+  --color-teal: #1c8880;
+  --color-teal-600: #16706a;
+  --color-teal-300: #63c6bc;
+  --color-teal-soft: #e7f5f3;
+  --color-teal-line: #bfe2dd;
+  --color-sand: #e9a94d; /* decorative warmth ONLY — never a status */
+
+  /* neutrals — very slightly warm so the UI reads friendly, not clinical-cold */
+  --color-ink: #15202e;
+  --color-ink-2: #2b3949;
+  --color-muted: #5e6b7d;
+  --color-muted-2: #8794a5;
+  --color-line: #e3e8ef;
+  --color-line-soft: #eef2f6;
+  --color-bg: #f4f7fa;
+  --color-bg-2: #eef3f8;
+  --color-card: #ffffff;
+  --color-card-2: #fafcfd;
+
+  /* status vocabulary — controlled */
+  --color-ok: #28714f;
+  --color-ok-soft: #e8f5ee;
+  --color-ok-line: #c2e3d1;
+  --color-warn: #8d5d12;
+  --color-warn-soft: #fdf2dd;
+  --color-warn-line: #f0dcb2;
+  --color-alert: #b32f2c;
+  --color-alert-soft: #fceae9;
+  --color-alert-line: #efc3c1;
+  --color-alert-solid: #c0403d;
+  --color-info: #3a5fb4;
+  --color-info-soft: #ebf1fd;
+  --color-info-line: #d3e0f7;
+
+  /* elevation ramp */
+  --shadow-flat: 0 1px 2px rgb(16 35 63 / 0.05), 0 1px 3px rgb(16 35 63 / 0.04);
+  --shadow-card: 0 1px 2px rgb(16 35 63 / 0.04), 0 6px 18px rgb(16 35 63 / 0.06);
+  --shadow-lift: 0 2px 6px rgb(16 35 63 / 0.05), 0 18px 42px rgb(16 35 63 / 0.1);
+  --shadow-modal: 0 32px 80px rgb(8 18 36 / 0.34);
+  --shadow-drawer: 24px 0 60px rgb(8 18 36 / 0.34);
+  --shadow-teal: 0 1px 2px rgb(16 35 63 / 0.1), 0 6px 16px rgb(28 136 128 / 0.24);
+  --shadow-badge: 0 2px 6px rgb(192 64 61 / 0.45);
+
+  /* geometry */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 22px;
+
+  --font-sans: var(--font-inter), "Segoe UI Variable Text", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --ease-hub: cubic-bezier(0.32, 0.72, 0.35, 1);
+
+  /* Breakpoints match the layout's real hinges, not generic device sizes:
+     sm  600 — status chips stop stacking under their rows
+     md  821 — drawer nav gives way to the icon rail
+     lg 1025 — rail expands to the full labelled sidebar
+     xl 1200 — four-up stats, two-up page layouts
+     2xl 1400 — consultation workspace fits its third column
+     3xl 1600 — roomier gutters */
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 821px;
+  --breakpoint-lg: 1025px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1400px;
+  --breakpoint-3xl: 1600px;
+
+  --animate-rec: rec-pulse 1.6s infinite;
+  --animate-page-in: page-in 0.22s var(--ease-hub);
+  --animate-rise: rise 0.24s var(--ease-hub);
+  --animate-sheet: sheet 0.26s var(--ease-hub);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes rec-pulse {
+  50% {
+    box-shadow: 0 0 0 9px rgb(240 113 110 / 0.04);
+  }
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+@keyframes sheet {
+  from {
+    opacity: 0.6;
+    transform: translateY(28px);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================================
+   Base — only what a utility cannot express: the page wash, the
+   paw watermark, scrollbar chrome, and the motion opt-out.
+   ============================================================ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(1100px 620px at 88% -8%, rgb(28 136 128 / 0.07), transparent 60%),
+      radial-gradient(900px 520px at -6% 4%, rgb(233 169 77 / 0.06), transparent 62%);
+    background-attachment: fixed;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.22;
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-teal-300);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: var(--color-teal-soft);
+    color: var(--color-navy);
+  }
+
+  /* the "it's animals" cue — a paw, kept almost subliminal */
+  .paw-watermark::before {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 340px;
+    pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg fill='%23ffffff' fill-opacity='0.035'%3E%3Cellipse cx='75' cy='92' rx='23' ry='18'/%3E%3Cellipse cx='48' cy='62' rx='9' ry='12'/%3E%3Cellipse cx='68' cy='51' rx='9' ry='13'/%3E%3Cellipse cx='89' cy='53' rx='9' ry='13'/%3E%3Cellipse cx='106' cy='70' rx='9' ry='12'/%3E%3C/g%3E%3C/svg%3E")
+      no-repeat center bottom / 190px;
+  }
+
+  .scroll-slim {
+    scrollbar-width: thin;
+    scrollbar-color: #c3cedb transparent;
+  }
+  .scroll-slim-light {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+  }
+  .scroll-slim::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background: #cdd7e2;
+    border-radius: 99px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: #fff;
+    }
+  }
 }
